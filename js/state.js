@@ -83,6 +83,7 @@ window.NUTEX_STATE = (() => {
     barrierDept: null,
     impactOpen: false,
     methodOpen: false,
+    usageDept: null,
     impactKpi: null,
     todoOpen: null,
     delegations: (() => {

@@ -70,7 +70,7 @@ window.NUTEX_DATA = (() => {
   // 6 Departments = 300 Employees exact
   const DEPARTMENTS = [
     {
-      id: 'rd', name: 'R&D', vp: 'Sarah Klein', employees: 45, targetUsers: 44, licensedUsers: 44, budgetShare: 0.32,
+      id: 'rd', name: 'R&D', vp: 'Sarah Klein', employees: 45, targetUsers: 44, licensedUsers: 44, occasionalUsers: 3, budgetShare: 0.32,
       dataSourcesReady: 1, dataSourcesTotal: 1,
       trainedEmployees: 40, weeklyUsers: 38, dailyUsers: 26, openRequests: 0,
       hoursSavedMo: 340, costSavedMo: 14200, errorRatePct: 2.4, cycleDays: 3.0,
@@ -89,7 +89,7 @@ window.NUTEX_DATA = (() => {
       ]
     },
     {
-      id: 'marketing', name: 'Marketing', vp: 'Marcus Weber', employees: 30, targetUsers: 30, licensedUsers: 29, budgetShare: 0.10,
+      id: 'marketing', name: 'Marketing', vp: 'Marcus Weber', employees: 30, targetUsers: 30, licensedUsers: 29, occasionalUsers: 3, budgetShare: 0.10,
       dataSourcesReady: 1, dataSourcesTotal: 1,
       trainedEmployees: 25, weeklyUsers: 24, dailyUsers: 15, openRequests: 1,
       hoursSavedMo: 225, costSavedMo: 8900, errorRatePct: 2.9, cycleDays: 2.8,
@@ -107,7 +107,7 @@ window.NUTEX_DATA = (() => {
       ]
     },
     {
-      id: 'sales', name: 'Sales', vp: 'Marcus Weber', employees: 50, targetUsers: 50, licensedUsers: 48, budgetShare: 0.19,
+      id: 'sales', name: 'Sales', vp: 'Marcus Weber', employees: 50, targetUsers: 50, licensedUsers: 48, occasionalUsers: 6, budgetShare: 0.19,
       dataSourcesReady: 1, dataSourcesTotal: 2,
       trainedEmployees: 38, weeklyUsers: 37, dailyUsers: 22, openRequests: 2,
       hoursSavedMo: 310, costSavedMo: 11800, errorRatePct: 2.8, cycleDays: 3.1,
@@ -126,7 +126,7 @@ window.NUTEX_DATA = (() => {
       ]
     },
     {
-      id: 'production', name: 'Production', vp: 'Dr. Thomas Berg', employees: 90, targetUsers: 50, licensedUsers: 50, budgetShare: 0.18,
+      id: 'production', name: 'Production', vp: 'Dr. Thomas Berg', employees: 90, targetUsers: 50, licensedUsers: 50, occasionalUsers: 3, budgetShare: 0.18,
       dataSourcesReady: 0, dataSourcesTotal: 2,
       trainedEmployees: 49, weeklyUsers: 42, dailyUsers: 19, openRequests: 0,
       hoursSavedMo: 245, costSavedMo: 9400, errorRatePct: 3.5, cycleDays: 4.1,
@@ -146,7 +146,7 @@ window.NUTEX_DATA = (() => {
       ]
     },
     {
-      id: 'logistics', name: 'Logistics', vp: 'Julia Hoffmann', employees: 45, targetUsers: 30, licensedUsers: 29, budgetShare: 0.10,
+      id: 'logistics', name: 'Logistics', vp: 'Julia Hoffmann', employees: 45, targetUsers: 30, licensedUsers: 29, occasionalUsers: 1, budgetShare: 0.10,
       dataSourcesReady: 0, dataSourcesTotal: 2,
       trainedEmployees: 29, weeklyUsers: 26, dailyUsers: 14, openRequests: 1,
       hoursSavedMo: 155, costSavedMo: 5800, errorRatePct: 3.2, cycleDays: 3.7,
@@ -165,7 +165,7 @@ window.NUTEX_DATA = (() => {
       ]
     },
     {
-      id: 'purchasing', name: 'Purchasing', vp: 'Andreas Richter', employees: 40, targetUsers: 32, licensedUsers: 32, budgetShare: 0.11,
+      id: 'purchasing', name: 'Purchasing', vp: 'Andreas Richter', employees: 40, targetUsers: 32, licensedUsers: 32, occasionalUsers: 3, budgetShare: 0.11,
       dataSourcesReady: 1, dataSourcesTotal: 1,
       trainedEmployees: 29, weeklyUsers: 26, dailyUsers: 15, openRequests: 0,
       hoursSavedMo: 145, costSavedMo: 7100, errorRatePct: 2.9, cycleDays: 3.4,

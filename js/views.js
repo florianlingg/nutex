@@ -222,7 +222,7 @@ window.NUTEX_VIEWS = (() => {
 
   // Every tile / to-do detail opens as a pop-up over the overview (same pattern as Value per € spent)
   const DETAILS = {
-    departments: { title: 'Weekly use by department', render: (m) => renderDepartments(m) },
+    departments: { title: 'AI usage by department', render: (m) => (window.NUTEX_USAGE ? window.NUTEX_USAGE.render(m) : renderDepartments(m)) },
     culture:     { title: 'Employee sentiment', render: (m) => (window.NUTEX_PEOPLE ? window.NUTEX_PEOPLE.render(m) : renderCulture()) },
     budget:      { title: 'AI budget', render: (m) => (window.NUTEX_BUDGET ? window.NUTEX_BUDGET.render(m) : renderBudget(m)) },
     projects:    { title: 'Pilots & AI projects', render: (m) => renderProjects(m) },

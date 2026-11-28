@@ -223,6 +223,12 @@
         S.state.detailOpen = null;
         render(); return;
       }
+      const usDept = e.target.closest('[data-action="usage-dept"]');
+      if (usDept) {
+        S.state.usageDept = usDept.dataset.dept;
+        render(); return;
+      }
+
       const impKpi = e.target.closest('[data-action="impact-kpi"]');
       if (impKpi) {
         S.state.impactKpi = impKpi.dataset.kpi;
@@ -230,6 +236,7 @@
       }
 
       if (e.target.closest('[data-action="open-loss"]')) {
+        S.state.detailOpen = null;
         S.state.lossOpen = true;
         S.state.detailOpen = null;
         render(); return;
