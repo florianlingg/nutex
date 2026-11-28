@@ -3156,6 +3156,9 @@ body.dark .rm-onpath-ring { stroke: #CBD5E1; }
 /* Theme helpers */
 .ov-tag-push, .ov-tag-fix, .ov-tag-fund { display: none; }
 
+/* Re-render of an already open overlay: no replayed animation */
+.ov-modal-backdrop.is-static { animation: none; }
+
 /* --- Responsive --- */
 @media (max-width: 1020px) {
   .ov-head, .ov-row, .ov-layout { grid-template-columns: 1fr; }

@@ -88,9 +88,21 @@
     if (el.settingsMenu) el.settingsMenu.innerHTML = V.renderSettingsMenu();
   }
 
+  // Which overlay is open — used to play the open animation only once (no flicker on in-modal clicks)
+  let lastOverlay = '';
+  function overlayKey() {
+    const st = S.state;
+    return [st.roadmapOpen && 'roadmap', st.valueOpen && 'value', st.methodOpen && 'method', st.lossOpen && 'loss',
+      st.impactOpen && 'impact', st.detailOpen && ('detail:' + st.detailOpen)].filter(Boolean).join('|');
+  }
+
   function render() {
     const metrics = S.computeMetrics();
     syncTopbar(metrics);
+    const key = overlayKey();
+    const sameOverlay = key && key === lastOverlay;
+    const prevModal = el.viewRoot.querySelector('.ov-modal');
+    const scrollTop = sameOverlay && prevModal ? prevModal.scrollTop : 0;
 
     el.viewRoot.classList.toggle('overview-mode', S.state.activeTab === 'overview');
 
@@ -102,6 +114,13 @@
     else if (S.state.activeTab === 'budget') el.viewRoot.innerHTML = V.renderBudget(metrics);
     else if (S.state.activeTab === 'culture') el.viewRoot.innerHTML = V.renderCulture();
     else el.viewRoot.innerHTML = V.renderDepartments(metrics);
+
+    if (sameOverlay) {
+      el.viewRoot.querySelectorAll('.ov-modal-backdrop').forEach(b => b.classList.add('is-static'));
+      const m = el.viewRoot.querySelector('.ov-modal');
+      if (m) m.scrollTop = scrollTop;
+    }
+    lastOverlay = key;
 
     el.modalRoot.innerHTML = V.renderProjectModal() + V.renderTrainingModal();
     hidePopover();
