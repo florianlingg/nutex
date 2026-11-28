@@ -10,7 +10,6 @@
 window.NUTEX_USAGE = (() => {
   const D = window.NUTEX_DATA;
   const S = window.NUTEX_STATE;
-  const TARGET = 75;
   const DAYS = { power: 4.2, regular: 1.6 }; // avg active days per week
 
   const STEPS = [
@@ -53,9 +52,10 @@ window.NUTEX_USAGE = (() => {
 
   const pct = (n, d) => Math.round((n / Math.max(1, d)) * 100);
   const activeDays = (l) => (l.weekly ? (l.power * DAYS.power + l.regular * DAYS.regular) / l.weekly : 0);
-  const lvl = (v) => (v >= TARGET ? 'green' : v >= TARGET - 15 ? 'yellow' : 'red');
+  const lvl = (v, t) => (v >= t ? 'green' : v >= t - 15 ? 'yellow' : 'red');
+  const tgt = (ids) => S.weeklyTarget(ids.map(id => D.DEPARTMENTS.find(d => d.id === id)));
 
-  function spark(values) {
+  function spark(values, TARGET) {
     const w = 72;
     const h = 22;
     const lo = Math.min(...values, 0);
@@ -69,6 +69,7 @@ window.NUTEX_USAGE = (() => {
   }
 
   function trend(ids, mi) {
+    const TARGET = tgt(ids);
     const W = 640;
     const H = 150;
     const L = 34;
@@ -101,9 +102,9 @@ window.NUTEX_USAGE = (() => {
     const list = [];
     ids.forEach(id => {
       const d = D.DEPARTMENTS.find(x => x.id === id);
-      S.getPrivacyTeams(d).forEach(t => list.push({ ...t, dept: d.name }));
+      S.getPrivacyTeams(d).forEach(t => list.push({ ...t, dept: d.name, target: S.weeklyTarget([d]) }));
     });
-    const shown = ids.length > 1 ? list.sort((a, b) => a.weeklyPct - b.weeklyPct).slice(0, 6) : list.sort((a, b) => b.weeklyPct - a.weeklyPct);
+    const shown = ids.length > 1 ? list.sort((a, b) => (a.weeklyPct - a.target) - (b.weeklyPct - b.target)).slice(0, 6) : list.sort((a, b) => b.weeklyPct - a.weeklyPct);
     return { title: ids.length > 1 ? 'Lowest teams company-wide' : 'Teams', rows: shown };
   }
 
@@ -120,9 +121,9 @@ window.NUTEX_USAGE = (() => {
       const now = sum(rIds, mi);
       const prev = sum(rIds, Math.max(0, mi - 1));
       const series = Array.from({ length: mi + 1 }, (_, i) => { const r = sum(rIds, i); return pct(r.weekly, r.employees); });
-      return { id, name: id === 'all' ? 'All departments' : D.DEPARTMENTS.find(d => d.id === id).name, pct: pct(now.weekly, now.employees), delta: pct(now.weekly, now.employees) - pct(prev.weekly, prev.employees), series };
+      return { id, name: id === 'all' ? 'All departments' : D.DEPARTMENTS.find(d => d.id === id).name, pct: pct(now.weekly, now.employees), target: tgt(rIds), delta: pct(now.weekly, now.employees) - pct(prev.weekly, prev.employees), series };
     };
-    const deptRows = visible.map(rowFor).sort((a, b) => a.pct - b.pct);
+    const deptRows = visible.map(rowFor).sort((a, b) => (a.pct - a.target) - (b.pct - b.target));
     const list = [rowFor('all'), ...deptRows];
 
     const l = sum(ids, mi);
@@ -132,7 +133,7 @@ window.NUTEX_USAGE = (() => {
     const breadth = notWeekly / Math.max(1, l.target);
     const depth = l.regular / Math.max(1, l.weekly);
     const tm = teams(ids);
-    const lowTeam = tm.rows.slice().sort((a, b) => a.weeklyPct - b.weeklyPct)[0];
+    const lowTeam = tm.rows.slice().sort((a, b) => (a.weeklyPct - a.target) - (b.weeklyPct - b.target))[0];
     const name = sel === 'all' ? 'Company' : D.DEPARTMENTS.find(d => d.id === sel).name;
     const takeaway = breadth >= 0.15
       ? `<strong>Breadth issue:</strong> ${notWeekly} of ${l.target} in the target group don't use AI weekly${l.inactive ? ` (${l.inactive} licensed but inactive)` : ''} → training & licenses first.`
@@ -144,22 +145,22 @@ window.NUTEX_USAGE = (() => {
       <div class="us">
         <div class="ip-head">
           <span class="b2-q">Who uses AI — and how deeply?</span>
-          <span class="ip-sum">weekly users as % of employees · target ${TARGET}%</span>
+          <span class="ip-sum">weekly users as % of employees · target = AI target group per department (McKinsey 2026)</span>
         </div>
         <div class="us-grid">
           <div class="ip-list ip-clean us-list">
             ${list.map((r, i) => `
               <button type="button" class="ip-row ${r.id === sel ? 'is-sel' : ''} ${i === 0 ? 'us-all' : ''}" data-action="usage-dept" data-dept="${r.id}">
-                <span class="ip-row-main"><strong>${r.name}</strong><small><span class="${r.delta >= 0 ? 'text-green' : 'text-red'}">${r.delta >= 0 ? '+' : ''}${r.delta} pp</span> vs last month</small></span>
-                ${spark(r.series)}
-                <b class="text-${lvl(r.pct)}">${r.pct}%</b>
+                <span class="ip-row-main"><strong>${r.name}</strong><small>target ${r.target}% · <span class="${r.delta >= 0 ? 'text-green' : 'text-red'}">${r.delta >= 0 ? '+' : ''}${r.delta} pp</span></small></span>
+                ${spark(r.series, r.target)}
+                <b class="text-${lvl(r.pct, r.target)}">${r.pct}%</b>
               </button>
             `).join('')}
           </div>
 
           <div class="us-detail">
             <div class="us-kpis">
-              <div><span>Weekly users</span><strong>${wkPct}%</strong><small>${l.weekly} of ${l.employees} employees</small></div>
+              <div><span>Weekly users</span><strong class="text-${lvl(wkPct, tgt(ids))}">${wkPct}%</strong><small>${l.weekly} of ${l.employees} · target ${tgt(ids)}% (${l.target})</small></div>
               <div><span>Power users</span><strong>${l.power}</strong><small>${pct(l.power, l.employees)}% of employees · 3+ days/week</small></div>
               <div><span>Active days / user</span><strong>${days.toFixed(1)}</strong><small>per week, weekly users</small></div>
               <div><span>Licensed but inactive</span><strong class="${l.inactive ? 'text-red' : ''}">${l.inactive}</strong><small>no use in 30 days</small></div>
@@ -182,8 +183,8 @@ window.NUTEX_USAGE = (() => {
                   ${tm.rows.map(t => `
                     <div class="us-team">
                       <span title="${t.name}">${t.isGrouped ? 'Small teams (<10)' : t.name}${ids.length > 1 ? `<small> · ${t.dept}</small>` : ''}</span>
-                      <div class="pp-track"><div style="width:${Math.min(100, t.weeklyPct)}%;background:var(--${lvl(t.weeklyPct)})"></div><i style="left:${TARGET}%"></i></div>
-                      <strong class="text-${lvl(t.weeklyPct)}">${t.weeklyPct}%</strong>
+                      <div class="pp-track"><div style="width:${Math.min(100, t.weeklyPct)}%;background:var(--${lvl(t.weeklyPct, t.target)})"></div><i style="left:${t.target}%"></i></div>
+                      <strong class="text-${lvl(t.weeklyPct, t.target)}">${t.weeklyPct}%</strong>
                     </div>
                   `).join('')}
                 </div>

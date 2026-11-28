@@ -302,9 +302,9 @@ window.NUTEX_EXPORT = (() => {
       {
         title: t('employees_using_ai'),
         val: `${metrics.weeklyPct}%`,
-        sub: `${metrics.weeklyUsers} / ${metrics.totalEmp} · ${t('target')} ${D.TARGETS.weeklyPct}%`,
-        pct: metrics.weeklyPct, tgt: D.TARGETS.weeklyPct,
-        col: statusHex(S.getStatus(metrics.weeklyPct, D.TARGETS.weeklyPct).level, P)
+        sub: `${metrics.weeklyUsers} / ${metrics.totalEmp} · ${t('target')} ${S.weeklyTarget(metrics.rows)}%`,
+        pct: metrics.weeklyPct, tgt: S.weeklyTarget(metrics.rows),
+        col: statusHex(S.getStatus(metrics.weeklyPct, S.weeklyTarget(metrics.rows)).level, P)
       },
       {
         title: t('employees_trained'),
@@ -351,14 +351,14 @@ window.NUTEX_EXPORT = (() => {
 
     // Left Card: By Department
     s2.rect({ x: 0.65, y: 1.4, w: 6.3, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s2.text({ x: 0.95, y: 1.65, w: 5.5, h: 0.35, content: `${t('usage_by_dept')} (${t('target')} ${D.TARGETS.weeklyPct}%)`, size: 15, bold: true });
+    s2.text({ x: 0.95, y: 1.65, w: 5.5, h: 0.35, content: `${t('usage_by_dept')} (${t('target')} ${S.weeklyTarget(metrics.rows)}%)`, size: 15, bold: true });
 
     const rankedDepts = metrics.rows.slice().sort((a, b) => b.weeklyPct - a.weeklyPct);
     rankedDepts.forEach((r, i) => {
       const ry = 2.25 + i * 0.72;
-      const col = statusHex(S.getStatus(r.weeklyPct, D.TARGETS.weeklyPct).level, P);
+      const col = statusHex(S.getStatus(r.weeklyPct, S.weeklyTarget([r.dept])).level, P);
       s2.text({ x: 0.95, y: ry, w: 1.45, h: 0.35, content: r.dept.name, size: 13, bold: true, color: P.text2, valign: 'ctr' });
-      s2.progressBar({ x: 2.45, y: ry + 0.08, w: 3.4, h: 0.2, pct: r.weeklyPct, targetPct: D.TARGETS.weeklyPct, fillColor: col });
+      s2.progressBar({ x: 2.45, y: ry + 0.08, w: 3.4, h: 0.2, pct: r.weeklyPct, targetPct: S.weeklyTarget([r.dept]), fillColor: col });
       s2.text({ x: 5.95, y: ry, w: 0.8, h: 0.35, content: `${r.weeklyPct}%`, size: 13, bold: true, align: 'r', valign: 'ctr' });
     });
 

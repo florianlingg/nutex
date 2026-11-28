@@ -295,19 +295,20 @@ window.NUTEX_VIEWS = (() => {
     // ======================= 2 · AI ADOPTION =======================
     const diff = metrics.weeklyPct - metrics.weeklyPrevPct;
     const deptSorted = metrics.rows.slice().sort((a, b) => b.weeklyPct - a.weeklyPct);
-    const lag = deptSorted[deptSorted.length - 1];
+    const lag = deptSorted.slice().sort((a, b) => (a.weeklyPct - S.weeklyTarget([a.dept])) - (b.weeklyPct - S.weeklyTarget([b.dept])))[0];
     const single = metrics.rows.length === 1 ? metrics.rows[0] : null;
+    const wTarget = S.weeklyTarget(metrics.rows);
     const teams = single ? S.getPrivacyTeams(single.dept).slice().sort((a, b) => b.weeklyPct - a.weeklyPct).slice(0, 6) : [];
     const shortTeam = (n) => n.startsWith('Grouped') ? 'Small teams' : n.split(/[\s&]+/)[0];
     const t4 = single ? tile({
-      title: `Weekly use by team · ${single.dept.name}`, level: ppLevel(metrics.weeklyPct, D.TARGETS.weeklyPct), nav: 'departments',
+      title: `Weekly use by team · ${single.dept.name} ${infoBtn('weeklyTarget')}`, level: ppLevel(metrics.weeklyPct, wTarget), nav: 'departments',
       hero: metrics.weeklyPct, unit: '%',
-      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${D.TARGETS.weeklyPct}%`,
+      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${wTarget}%`,
       visual: `
         <div class="ov-donuts" style="grid-template-columns:repeat(${Math.max(4, teams.length)}, 1fr)">
           ${teams.map(tm => `
             <div class="ov-donut" title="${tm.name}: ${tm.weeklyPct}% (${tm.employees} people)">
-              ${donut(tm.weeklyPct, ppLevel(tm.weeklyPct, D.TARGETS.weeklyPct))}
+              ${donut(tm.weeklyPct, ppLevel(tm.weeklyPct, wTarget))}
               <span>${shortTeam(tm.name)}</span>
             </div>
           `).join('')}
@@ -315,20 +316,20 @@ window.NUTEX_VIEWS = (() => {
       `,
       foot: teams.length ? `Lowest: <strong>${teams[teams.length - 1].name} ${teams[teams.length - 1].weeklyPct}%</strong>` : ''
     }) : tile({
-      title: 'Weekly use by department', level: ppLevel(metrics.weeklyPct, D.TARGETS.weeklyPct), nav: 'departments',
+      title: `Weekly use by department ${infoBtn('weeklyTarget')}`, level: ppLevel(metrics.weeklyPct, wTarget), nav: 'departments',
       hero: metrics.weeklyPct, unit: '%',
-      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${D.TARGETS.weeklyPct}%`,
+      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${wTarget}%`,
       visual: `
         <div class="ov-donuts">
           ${deptSorted.map(r => `
             <div class="ov-donut ${!isCEO && role.ownDepts.includes(r.dept.id) ? 'is-own' : ''}" title="${r.dept.name}: ${r.weeklyPct}%">
-              ${donut(r.weeklyPct, ppLevel(r.weeklyPct, D.TARGETS.weeklyPct))}
+              ${donut(r.weeklyPct, ppLevel(r.weeklyPct, S.weeklyTarget([r.dept])))}
               <span>${r.dept.name === 'Purchasing' ? 'Purch.' : r.dept.name === 'Production' ? 'Prod.' : r.dept.name === 'Marketing' ? 'Mktg.' : r.dept.name === 'Logistics' ? 'Logist.' : r.dept.name}</span>
             </div>
           `).join('')}
         </div>
       `,
-      foot: lag ? `Lowest: <strong>${lag.dept.name} ${lag.weeklyPct}%</strong>` : ''
+      foot: lag ? `Furthest from target: <strong>${lag.dept.name} ${lag.weeklyPct}% / ${S.weeklyTarget([lag.dept])}%</strong>` : ''
     });
 
     // Where do we lose employees? — Level 1 time horizon (Level 2 opens the loss timeline)
@@ -369,11 +370,11 @@ window.NUTEX_VIEWS = (() => {
         suggest: ['nina', 'thomas', 'julia']
       }));
     }
-    if (lag && lag.weeklyPct < D.TARGETS.weeklyPct) {
+    if (lag && lag.weeklyPct < S.weeklyTarget([lag.dept])) {
       pushTodos.push(todoItem({
         title: `Adoption plan for ${lag.dept.name}`,
         sub: `with ${lag.dept.vp}`,
-        badge: `${lag.weeklyPct}%`, level: ppLevel(lag.weeklyPct, D.TARGETS.weeklyPct),
+        badge: `${lag.weeklyPct}% / ${S.weeklyTarget([lag.dept])}%`, level: ppLevel(lag.weeklyPct, S.weeklyTarget([lag.dept])),
         nav: 'departments',
         suggest: ['thomas', 'nina', 'eva']
       }));

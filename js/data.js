@@ -7,7 +7,7 @@ window.NUTEX_DATA = (() => {
   const THRESHOLDS = { green: 95, yellow: 80 };
 
   const TARGETS = {
-    weeklyPct: 75,          // Employees using AI weekly
+    weeklyPct: 79,          // Company: AI target group 236 of 300 (department targets = own target group)
     dailyPct: 45,           // Employees using AI 3+ days/week
     licenseActivePct: 85,   // Active share of paid licenses
     costPerActive: 42,      // €/month max target
@@ -24,6 +24,7 @@ window.NUTEX_DATA = (() => {
     training:   { source: 'Learning Platform', updated: '2026-11-18', freq: 'Weekly', text: 'Share of employees who completed core AI training.' },
     dataReady:  { source: 'IT Audit', updated: '2026-11-18', freq: 'Weekly', text: 'Data sources meeting all quality & security criteria.' },
     impact:     { source: 'Logs & Finance', updated: '2026-11-18', freq: 'Monthly', text: 'Estimated monthly hours & savings paired with measured process error rate.' },
+    weeklyTarget: { source: 'McKinsey study 2026', updated: '2026-11-18', freq: 'Yearly', text: 'There is no single % target. Each department has its own target: its AI target group — the roles where AI is relevant, sized per department based on a McKinsey study (2026). Target % = target group ÷ employees, e.g. Production 50 of 90 (56%), Sales 50 of 50 (100%). Company: 236 of 300 employees (79%). Status compares weekly users with each department\'s own target.' },
     returnCalc: { source: 'Return model', updated: '2026-11-18', freq: 'Monthly', text: 'Return = time saved + quality + speed & revenue + cost avoided — net, each euro counted once. Soft facts (customer feedback, employee sentiment, compliance risk) are tracked separately, not in €. Details: open the tile → "How is return calculated?"' }
   };
 
@@ -346,7 +347,7 @@ window.NUTEX_DATA = (() => {
     keys: ['jan_2026', 'feb_2026', 'mar_2026', 'apr_2026', 'may_2026', 'jun_2026', 'jul_2026', 'aug_2026', 'sep_2026', 'oct_2026', 'nov_2026'],
     labelsEn: ['Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26', 'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26', 'Nov 26'],
     labelsDe: ['Jan 26', 'Feb 26', 'Mär 26', 'Apr 26', 'Mai 26', 'Jun 26', 'Jul 26', 'Aug 26', 'Sep 26', 'Okt 26', 'Nov 26'],
-    weekly:  { target: 75 },
+    weekly:  { target: 79 },
     daily:   { target: 45 },
     trained: { target: 80 }
   };

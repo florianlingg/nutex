@@ -142,6 +142,13 @@ window.NUTEX_STATE = (() => {
     return match.length ? match : acc;
   }
 
+  // Weekly-use target = AI target group ÷ employees (per department or summed for a scope)
+  function weeklyTarget(depts) {
+    const list = (depts && depts.length ? depts : D.DEPARTMENTS).map(d => (d.dept ? d.dept : d));
+    const emp = list.reduce((a, d) => a + d.employees, 0) || 1;
+    return Math.round((list.reduce((a, d) => a + (d.targetUsers || d.employees), 0) / emp) * 100);
+  }
+
   function getStatus(actual, target, lowerIsBetter = false) {
     if (!target) return { level: 'green', label: t('on_track'), gapPct: 0 };
     const att = lowerIsBetter
@@ -665,7 +672,7 @@ window.NUTEX_STATE = (() => {
   return {
     state, r1, r2, t, setTheme, setLang, setDelegation,
     getRole, getPerms, canViewDept, canViewFinancials, getAccessibleDepts, getFilteredDepts, adoption,
-    getStatus, addProject, setProjectStatus, getVisibleProjects,
+    getStatus, weeklyTarget, addProject, setProjectStatus, getVisibleProjects,
     addTraining, setTrainingStatus, getVisibleTrainings,
     reallocateSeats, cancelUnusedSeats, resetLicenseActions,
     setMonthlyBudget, increaseBudget, resetMonthlyBudget,
