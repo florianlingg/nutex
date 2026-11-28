@@ -10,9 +10,9 @@ window.NUTEX_ADOPTION = (() => {
   let TOTAL = 300;
 
   const SERIES = [
-    { key: 'trained',  label: 'Trained',      color: '#14B8A6', fill: 'rgba(20,184,166,0.05)' },
-    { key: 'licensed', label: 'With license', color: '#94A3B8', fill: 'rgba(148,163,184,0.05)' },
-    { key: 'weekly',   label: 'Weekly users', color: '#2563EB', fill: 'rgba(37,99,235,0.14)' }
+    { key: 'trained',  label: 'Trained',      color: 'var(--c-indigo)', fill: 'rgba(99,102,241,0.05)' },
+    { key: 'licensed', label: 'With license', color: 'var(--c-neutral)', fill: 'rgba(148,163,184,0.05)' },
+    { key: 'weekly',   label: 'Weekly users', color: 'var(--c-primary)', fill: 'rgba(37,99,235,0.14)' }
   ];
 
   const pct = (n) => Math.round((n / TOTAL) * 100);
@@ -84,8 +84,8 @@ window.NUTEX_ADOPTION = (() => {
       return `${fill}<polyline points="${a.pts}" fill="none" stroke="${s.color}" stroke-width="${s.key === 'weekly' ? 2.2 : 1.5}" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
     }).join('');
     const marks = events(last, A).filter(e => e.weekly < 0).map(e => `
-      <line x1="${x(e.m)}" x2="${x(e.m)}" y1="6" y2="${h}" stroke="#EF4444" stroke-width="1" stroke-dasharray="2 2" opacity="0.8"/>
-      <path d="M${x(e.m) - 4},2 L${x(e.m) + 4},2 L${x(e.m)},8 z" fill="#EF4444"/>
+      <line x1="${x(e.m)}" x2="${x(e.m)}" y1="6" y2="${h}" stroke="var(--red)" stroke-width="1" stroke-dasharray="2 2" opacity="0.8"/>
+      <path d="M${x(e.m) - 4},2 L${x(e.m) + 4},2 L${x(e.m)},8 z" fill="var(--red)"/>
     `).join('');
     return `
       <svg class="ad-mini" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
@@ -131,7 +131,7 @@ window.NUTEX_ADOPTION = (() => {
     const evs = events(last, A).map(e => {
       const ex = x(e.m);
       const loss = e.weekly < 0;
-      const col = loss ? '#EF4444' : '#10B981';
+      const col = loss ? 'var(--red)' : 'var(--green)';
       return `
         <g class="ad-ev" data-ev="${e.id}" tabindex="0" role="button" aria-label="${e.title}: ${sign(e.weekly)} weekly users">
           <line x1="${ex}" x2="${ex}" y1="${T - 10}" y2="${B}" stroke="${col}" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.75"/>

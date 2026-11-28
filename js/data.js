@@ -783,25 +783,25 @@ window.NUTEX_DATA = (() => {
     hourlyRate: 40, // € fully loaded cost per employee hour
     drivers: [
       {
-        id: 'time', label: 'Time saved', color: '#2563EB',
+        id: 'time', label: 'Time saved', color: 'var(--c-primary)',
         formula: 'Net hours saved × €40 fully loaded hourly rate',
         detail: 'Hours from everyday AI use (logs + monthly survey), net of rework for checking and fixing output.',
         source: 'Tool logs · pulse survey', owner: 'HR / Finance', freq: 'Monthly', confidence: 'estimate'
       },
       {
-        id: 'quality', label: 'Quality', color: '#14B8A6',
+        id: 'quality', label: 'Quality', color: 'var(--c-sky)',
         formula: 'Fewer defects & returns × cost per case (scrap, credit note, re-shipment)',
         detail: 'Defects per 1,000 m and returns rate vs. 3-month pre-AI baseline; Plant B as control group.',
         source: 'QA system · ERP returns', owner: 'Production', freq: 'Monthly', confidence: 'measured'
       },
       {
-        id: 'speed', label: 'Speed & revenue', color: '#8B5CF6',
+        id: 'speed', label: 'Speed & revenue', color: 'var(--c-indigo)',
         formula: 'Faster quotes & lab cycles × contribution margin of the extra output',
         detail: 'Quote lead time and win rate (CRM), lab test cycle time; Apparel team as control group for quotes.',
         source: 'CRM · lab system', owner: 'Sales / R&D', freq: 'Monthly', confidence: 'measured'
       },
       {
-        id: 'cost', label: 'Cost avoided', color: '#0EA5E9',
+        id: 'cost', label: 'Cost avoided', color: 'var(--c-navy)',
         formula: 'Avoided external spend: penalties, express freight, agency fees, better contract prices',
         detail: 'Invoices before vs. after go-live, adjusted for volume.',
         source: 'Finance · procurement', owner: 'Finance', freq: 'Quarterly', confidence: 'estimate'

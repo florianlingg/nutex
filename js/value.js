@@ -17,10 +17,10 @@ window.NUTEX_VALUE = (() => {
     return { max: Math.ceil(dept.employees / 10) * 10, split: Math.max(5, Math.round(dept.employees * 0.4)) };
   }
   const ZONES = {
-    implement: { label: 'Implement',  color: '#10B981', bg: 'rgba(16,185,129,0.09)', txt: 'var(--green-txt)', hint: 'pays off for many people' },
-    niche:     { label: 'Niche win',  color: '#64748B', bg: 'rgba(100,116,139,0.07)', txt: 'var(--text-2)',    hint: 'pays off, few people' },
-    improve:   { label: 'Improve',    color: '#F59E0B', bg: 'rgba(245,158,11,0.09)', txt: 'var(--yellow-txt)', hint: 'many people, not paying off yet' },
-    stop:      { label: 'Stop',       color: '#EF4444', bg: 'rgba(239,68,68,0.08)',  txt: 'var(--red-txt)',   hint: 'costs more than it returns' }
+    implement: { label: 'Implement',  color: 'var(--green)', bg: 'rgba(16,185,129,0.09)', txt: 'var(--green-txt)', hint: 'pays off for many people' },
+    niche:     { label: 'Niche win',  color: 'var(--c-neutral-600)', bg: 'rgba(100,116,139,0.07)', txt: 'var(--text-2)',    hint: 'pays off, few people' },
+    improve:   { label: 'Improve',    color: 'var(--yellow)', bg: 'rgba(245,158,11,0.09)', txt: 'var(--yellow-txt)', hint: 'many people, not paying off yet' },
+    stop:      { label: 'Stop',       color: 'var(--red)', bg: 'rgba(239,68,68,0.08)',  txt: 'var(--red-txt)',   hint: 'costs more than it returns' }
   };
 
   const eur = (n) => '€' + Math.round(n).toLocaleString('en-US');
@@ -40,7 +40,7 @@ window.NUTEX_VALUE = (() => {
       .map(p => ({ ...p, vpe: p.valueMo / p.costMo, zone: zoneOf(p) }));
   };
 
-  function spark(values, { w = 260, h = 70, ref = 1, color = '#10B981' } = {}) {
+  function spark(values, { w = 260, h = 70, ref = 1, color = 'var(--c-primary)' } = {}) {
     const all = values.concat([ref]);
     const lo = Math.min(...all);
     const hi = Math.max(...all);
@@ -51,7 +51,7 @@ window.NUTEX_VALUE = (() => {
     const last = values.length - 1;
     return `
       <svg class="vl-spark" viewBox="0 0 ${w} ${h + 16}" aria-hidden="true">
-        <line x1="0" x2="${w}" y1="${y(ref)}" y2="${y(ref)}" stroke="#EF4444" stroke-dasharray="4 3" stroke-width="1" opacity="0.7"/>
+        <line x1="0" x2="${w}" y1="${y(ref)}" y2="${y(ref)}" stroke="var(--red)" stroke-dasharray="4 3" stroke-width="1" opacity="0.7"/>
         <text x="${w - 2}" y="${y(ref) + 13}" text-anchor="end" font-size="10" font-weight="600" fill="var(--red-txt)">break-even 1.0</text>
         <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
         <circle cx="${x(last)}" cy="${y(values[last])}" r="4" fill="${color}"/>
@@ -257,7 +257,7 @@ window.NUTEX_VALUE = (() => {
             <div class="vl-meta">target ≥ €1.00</div>
             <div class="vl-meta"><strong>${eurK(valueMo)} return</strong> vs <strong>${eurK(costMo)} cost</strong> per month</div>
             <div class="vl-meta ${diff >= 0 ? 'text-green' : 'text-red'}"><strong>${diff >= 0 ? '+' : ''}${diff.toFixed(2)}</strong> vs last month</div>
-            ${spark(series, { color: '#2563EB' })}
+            ${spark(series, { color: 'var(--c-primary)' })}
             <div class="vl-axis"><span>${labels[0]}</span><span>${labels[labels.length - 1]}</span></div>
 
             <span class="vl-lbl" style="margin-top:12px">Where the return comes from</span>

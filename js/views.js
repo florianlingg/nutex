@@ -262,7 +262,7 @@ window.NUTEX_VIEWS = (() => {
       hero: rm.score, unit: '%',
       context: `${rm.done} of ${rm.dueByToday} due milestones done`,
       visual: segments([
-        { label: 'Done', n: rm.done, color: '#2563EB' },
+        { label: 'Done', n: rm.done, color: 'var(--c-primary)' },
         { label: 'Late', n: rm.overdue.length, color: 'var(--red)' },
         { label: 'Upcoming', n: upcoming, color: 'var(--border-hover)' }
       ]),
@@ -354,7 +354,7 @@ window.NUTEX_VIEWS = (() => {
       title: 'People score', level: pLevel, nav: 'culture',
       hero: culture.overallPct, unit: '%',
       context: `<span class="${pDiff >= 0 ? 'text-green' : 'text-red'}">${pDiff >= 0 ? '+' : ''}${pDiff} pp</span> · ${culture.responsePct}% responded`,
-      visual: sparkline(pSeries, { color: '#2563EB', ref: 75 }),
+      visual: sparkline(pSeries, { color: 'var(--c-primary)', ref: 75 }),
       foot: weakest ? `Weakest: <strong>${weakest.label}</strong> ${weakest.pct}%` : ''
     });
 
@@ -403,7 +403,7 @@ window.NUTEX_VIEWS = (() => {
         title: `Return per € spent ${infoBtn('returnCalc')}`, level: rLevel, action: 'open-value',
         hero: `€${ratio.toFixed(2)}`,
         context: `${eurK(metrics.costSavedMo)} return · ${eurK(metrics.totalSpendMo)} cost`,
-        visual: sparkline(rSeries, { color: '#2563EB', ref: 1 }),
+        visual: sparkline(rSeries, { color: 'var(--c-primary)', ref: 1 }),
         foot: `Dashed = break-even · <strong>${metrics.hoursSavedMo.toLocaleString('en-US')} h</strong> saved`
       });
     } else {
@@ -413,7 +413,7 @@ window.NUTEX_VIEWS = (() => {
         title: 'Hours saved', level: ppLevel(Math.round((metrics.hoursSavedMo / Math.max(1, hT)) * 100), 100), nav: 'departments',
         hero: metrics.hoursSavedMo.toLocaleString('en-US'), unit: ' h',
         context: `per month · target ${hT.toLocaleString('en-US')} h`,
-        visual: sparkline(hSeries, { color: '#2563EB' }),
+        visual: sparkline(hSeries, { color: 'var(--c-primary)' }),
         foot: `Jan → ${metrics.tf.label}`
       });
     }
@@ -426,10 +426,10 @@ window.NUTEX_VIEWS = (() => {
         hero: metrics.budgetUsedPct, unit: '%',
         context: `${eur(metrics.totalSpendMo)} of ${eur(metrics.budgetLimit)}`,
         visual: segments([
-          { label: 'Licenses', n: metrics.licenseSpendMo, color: '#2563EB', display: eurK(metrics.licenseSpendMo) },
-          { label: 'Tokens', n: metrics.tokenSpendMo, color: '#8B5CF6', display: eurK(metrics.tokenSpendMo) },
-          { label: 'Projects', n: metrics.projectSpendMo, color: '#14B8A6', display: eurK(metrics.projectSpendMo) },
-          { label: 'Training', n: metrics.trainingSpendMo, color: '#0EA5E9', display: eurK(metrics.trainingSpendMo) },
+          { label: 'Licenses', n: metrics.licenseSpendMo, color: 'var(--c-primary)', display: eurK(metrics.licenseSpendMo) },
+          { label: 'Tokens', n: metrics.tokenSpendMo, color: 'var(--c-indigo)', display: eurK(metrics.tokenSpendMo) },
+          { label: 'Projects', n: metrics.projectSpendMo, color: 'var(--c-sky)', display: eurK(metrics.projectSpendMo) },
+          { label: 'Training', n: metrics.trainingSpendMo, color: 'var(--c-light)', display: eurK(metrics.trainingSpendMo) },
           { label: '', n: Math.max(0, metrics.budgetRemaining), color: 'transparent', legend: false }
         ]),
         foot: metrics.budgetRemaining >= 0
@@ -870,10 +870,10 @@ window.NUTEX_VIEWS = (() => {
     const level = metrics.budgetUsedPct > 95 ? 'red' : metrics.budgetUsedPct > 80 ? 'yellow' : 'green';
     const spendTotal = Math.max(1, metrics.totalSpendMo);
     const items = [
-      { label: t('ai_licenses'), value: metrics.licenseSpendMo, pct: Math.round((metrics.licenseSpendMo / spendTotal) * 100), color: '#3B82F6' },
-      { label: `${t('api_tokens')} (${metrics.totalTokensM}M)`, value: metrics.tokenSpendMo, pct: Math.round((metrics.tokenSpendMo / spendTotal) * 100), color: '#8B5CF6' },
-      { label: t('approved_projects'), value: metrics.projectSpendMo, pct: Math.round((metrics.projectSpendMo / spendTotal) * 100), color: '#10B981' },
-      { label: t('approved_trainings'), value: metrics.trainingSpendMo, pct: Math.round((metrics.trainingSpendMo / spendTotal) * 100), color: '#F59E0B' }
+      { label: t('ai_licenses'), value: metrics.licenseSpendMo, pct: Math.round((metrics.licenseSpendMo / spendTotal) * 100), color: 'var(--c-primary)' },
+      { label: `${t('api_tokens')} (${metrics.totalTokensM}M)`, value: metrics.tokenSpendMo, pct: Math.round((metrics.tokenSpendMo / spendTotal) * 100), color: 'var(--c-navy)' },
+      { label: t('approved_projects'), value: metrics.projectSpendMo, pct: Math.round((metrics.projectSpendMo / spendTotal) * 100), color: 'var(--green)' },
+      { label: t('approved_trainings'), value: metrics.trainingSpendMo, pct: Math.round((metrics.trainingSpendMo / spendTotal) * 100), color: 'var(--yellow)' }
     ];
 
     const tokenRows = metrics.rows.slice().sort((a, b) => b.tokensM - a.tokensM);
@@ -1130,7 +1130,7 @@ window.NUTEX_VIEWS = (() => {
                       <span class="muted-sm"><strong>${w.votes}</strong> ${t('votes')}</span>
                     </div>
                     <div class="funnel-track" style="height:10px;">
-                      <div class="funnel-fill" style="width:${Math.max(8, Math.round((w.votes / maxVotes) * 100))}%;background:#3B82F6;"></div>
+                      <div class="funnel-fill" style="width:${Math.max(8, Math.round((w.votes / maxVotes) * 100))}%;background:var(--c-primary);"></div>
                     </div>
                   </div>
                 </div>

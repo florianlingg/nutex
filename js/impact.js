@@ -11,7 +11,7 @@ window.NUTEX_IMPACT = (() => {
   const S = window.NUTEX_STATE;
   const I = () => D.IMPACT;
   const OFFSET = 3; // series start 3 months before Jan 2026 (Oct–Dec 2025 = pre-AI baseline period)
-  const LINE_COLORS = ['#2563EB', '#14B8A6', '#8B5CF6', '#0EA5E9', '#6366F1', '#94A3B8', '#3B82F6', '#2DD4BF'];
+  const LINE_COLORS = ['var(--c-primary)', 'var(--c-sky)', 'var(--c-indigo)', 'var(--c-navy)', 'var(--c-light)', 'var(--c-primary-300)', 'var(--c-neutral-600)', 'var(--c-neutral)'];
 
   const avg = (a) => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
   const fmt = (v, k) => (k.unit === '%' ? `${v.toFixed(1)}%` : k.unit === 'h' ? (v < 12 ? `${v.toFixed(1)} h` : `${Math.round(v)} h`) : k.unit === 'd' ? `${v.toFixed(1)} d` : k.unit === 'k' ? `€${v.toFixed(1)}k` : v.toFixed(1));
@@ -129,8 +129,8 @@ window.NUTEX_IMPACT = (() => {
         <line x1="${x(g)}" x2="${x(g)}" y1="${T - 8}" y2="${B}" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="3 3"/>
         <text x="${x(g) + 6}" y="${T - 2}" font-size="10.5" font-weight="600" fill="var(--text-3)">AI go-live</text>
         ${k.control ? line(k.control, 'var(--border-hover)', 1.6) : ''}
-        ${line(k.series, '#2563EB', 2.4)}
-        <circle cx="${x(ni)}" cy="${y(st.now)}" r="4" fill="#2563EB"/>
+        ${line(k.series, 'var(--c-primary)', 2.4)}
+        <circle cx="${x(ni)}" cy="${y(st.now)}" r="4" fill="var(--c-primary)"/>
         ${labels.map((l, i) => (i % 2 === 1 || i === labels.length - 1) ? '' : `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" font-size="10" fill="var(--text-3)">${l}</text>`).join('')}
         <text x="${x(labels.length - 1)}" y="${H - 10}" text-anchor="middle" font-size="10" fill="var(--text-3)">${labels[labels.length - 1]}</text>
       </svg>

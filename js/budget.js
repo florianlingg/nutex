@@ -85,8 +85,8 @@ window.NUTEX_BUDGET = (() => {
         <line x1="0" x2="${w}" y1="${y(budget)}" y2="${y(budget)}" stroke="var(--text-3)" stroke-dasharray="4 3" stroke-width="1"/>
         <text x="${w - 2}" y="${y(budget) - 4}" text-anchor="end" font-size="9.5" fill="var(--text-3)">budget</text>
         <polygon points="2,${h} ${pts} ${x(values.length - 1)},${h}" fill="rgba(59,130,246,0.12)"/>
-        <polyline points="${pts}" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linejoin="round"/>
-        <circle cx="${x(values.length - 1)}" cy="${y(values[values.length - 1])}" r="3.2" fill="#3B82F6"/>
+        <polyline points="${pts}" fill="none" stroke="var(--c-primary)" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="${x(values.length - 1)}" cy="${y(values[values.length - 1])}" r="3.2" fill="var(--c-primary)"/>
       </svg>
     `;
   }
@@ -127,7 +127,7 @@ window.NUTEX_BUDGET = (() => {
       while (placed.some(q => q.lane === lane && Math.abs(q.x - px) < 13)) lane++;
       placed.push({ x: px, lane });
       const py = yMid + (lane % 2 ? 1 : -1) * Math.ceil(lane / 2) * 13;
-      return `<circle cx="${px}" cy="${py}" r="6" fill="#94A3B8" opacity="0.75"><title>${p.name}: ${p.share.toFixed(2)}% of revenue</title></circle>`;
+      return `<circle cx="${px}" cy="${py}" r="6" fill="var(--c-neutral)" opacity="0.75"><title>${p.name}: ${p.share.toFixed(2)}% of revenue</title></circle>`;
     }).join('');
     const ticks = [0, 0.4, 0.8, 1.2].map(t => `
       <text x="${x(t)}" y="${H - 4}" text-anchor="${t === 0 ? 'start' : t === MAX ? 'end' : 'middle'}" font-size="11" fill="var(--text-3)">${t.toFixed(1)}%</text>
@@ -145,12 +145,12 @@ window.NUTEX_BUDGET = (() => {
         <line x1="${x(stats.median)}" x2="${x(stats.median)}" y1="58" y2="118" stroke="var(--text-3)" stroke-dasharray="3 3"/>
         <text x="${x(stats.median)}" y="114" text-anchor="end" dx="-4" font-size="9.5" fill="var(--text-3)">median</text>
         ${dots}
-        <line x1="${bx}" x2="${bx}" y1="42" y2="120" stroke="#2563EB" stroke-width="1.6" stroke-dasharray="4 3"/>
-        <text x="${bx}" y="${H - 18}" text-anchor="middle" font-size="10" font-weight="800" fill="#2563EB">budget ${fmtPct(budgetShare)}</text>
-        <circle cx="${nx}" cy="${yMid}" r="10" fill="#0F172A" stroke="var(--surface)" stroke-width="3"/>
-        <rect x="${nx - 44}" y="6" width="88" height="20" rx="10" fill="#0F172A"/>
+        <line x1="${bx}" x2="${bx}" y1="42" y2="120" stroke="var(--c-primary)" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <text x="${bx}" y="${H - 18}" text-anchor="middle" font-size="10" font-weight="800" fill="var(--c-primary)">budget ${fmtPct(budgetShare)}</text>
+        <circle cx="${nx}" cy="${yMid}" r="10" fill="var(--c-ink)" stroke="var(--surface)" stroke-width="3"/>
+        <rect x="${nx - 44}" y="6" width="88" height="20" rx="10" fill="var(--c-ink)"/>
         <text x="${nx}" y="16" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="800" fill="#FFFFFF">NuTex ${fmtPct(share)}</text>
-        <line x1="${nx}" x2="${nx}" y1="26" y2="${yMid - 10}" stroke="#0F172A" stroke-width="1.5"/>
+        <line x1="${nx}" x2="${nx}" y1="26" y2="${yMid - 10}" stroke="var(--c-ink)" stroke-width="1.5"/>
         ${ticks}
       </svg>
     `;
@@ -166,9 +166,9 @@ window.NUTEX_BUDGET = (() => {
     const pts = series.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
     return `
       <svg class="b4-trend" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
-        <line x1="0" x2="${w}" y1="${y(budget)}" y2="${y(budget)}" stroke="#2563EB" stroke-dasharray="5 4" stroke-width="1.3" vector-effect="non-scaling-stroke"/>
+        <line x1="0" x2="${w}" y1="${y(budget)}" y2="${y(budget)}" stroke="var(--c-primary)" stroke-dasharray="5 4" stroke-width="1.3" vector-effect="non-scaling-stroke"/>
         <polygon points="2,${h} ${pts} ${x(series.length - 1)},${h}" fill="rgba(15,23,42,0.07)"/>
-        <polyline points="${pts}" fill="none" stroke="#0F172A" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        <polyline points="${pts}" fill="none" stroke="var(--c-ink)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
       </svg>
     `;
   }
@@ -194,10 +194,10 @@ window.NUTEX_BUDGET = (() => {
     const series = keys.slice(0, idx + 1).map(k => withFilters({ timeframe: k, dept: 'all' }, m => m.totalSpendMo));
     const ytd = series.reduce((a, b) => a + b, 0);
     const cats = [
-      { label: 'Licenses', v: all.licenseSpendMo, c: '#2563EB' },
-      { label: 'Tokens', v: all.tokenSpendMo, c: '#8B5CF6' },
-      { label: 'Projects', v: all.projectSpendMo, c: '#14B8A6' },
-      { label: 'Trainings', v: all.trainingSpendMo, c: '#0EA5E9' }
+      { label: 'Licenses', v: all.licenseSpendMo, c: 'var(--c-primary)' },
+      { label: 'Tokens', v: all.tokenSpendMo, c: 'var(--c-indigo)' },
+      { label: 'Projects', v: all.projectSpendMo, c: 'var(--c-sky)' },
+      { label: 'Trainings', v: all.trainingSpendMo, c: 'var(--c-light)' }
     ];
     const [lo, hi] = C.bench.shareOfRevenue;
     const eMax = Math.max(revMo * 1.2 / 100, all.budgetLimit, all.totalSpendMo);
