@@ -213,12 +213,11 @@ window.NUTEX_BUDGET = (() => {
     const eHi = ePos(revMo * hi / 100);
     const eNow = ePos(all.totalSpendMo);
     const eBud = ePos(all.budgetLimit);
-    // Aligned table: each bar = share of the row above (IT of revenue, AI budget of IT, spend of AI budget)
+    // Aligned table: each bar = share of the row above (IT of revenue, AI spend of IT)
     const tableRows = [
       { label: 'Revenue', val: revMo, bar: 100, share: `${eurK(C.revenueYear)} / year`, cls: '' },
       { label: 'IT budget', val: itMo, bar: C.itBudgetPct, share: `${fmtPct(C.itBudgetPct)} of revenue`, cls: '', scale: 10 },
-      { label: 'AI budget', val: all.budgetLimit, bar: pct(all.budgetLimit, itMo), share: `${fmtPct(pct(all.budgetLimit, itMo))} of IT budget`, cls: 'is-budget' },
-      { label: 'AI spend', val: all.totalSpendMo, bar: all.budgetUsedPct, share: `${all.budgetUsedPct}% of AI budget`, cls: 'is-ai', track: true }
+      { label: 'AI spend', val: all.totalSpendMo, bar: pct(all.totalSpendMo, itMo), share: `${fmtPct(pct(all.totalSpendMo, itMo))} of IT budget`, cls: 'is-ai', scale: 1 }
     ];
 
     return `
