@@ -110,15 +110,17 @@ window.NUTEX_BUDGET = (() => {
     };
   }
 
-  // Compact peer strip: every comparable company is a dot; NuTex and the budget are highlighted
-  function peerChart(share, budgetShare, C, stats) {
-    const W = 560;
-    const H = 150;
-    const L = 12;
-    const R = 548;
+  // Peer chart: one scale, two axes — % of revenue and the same position in €/month for NuTex
+  function peerChart(share, budgetShare, C, stats, revMo) {
+    const W = 600;
+    const H = 186;
+    const L = 16;
+    const R = 584;
     const MAX = 1.2;
     const x = (p) => L + (Math.min(p, MAX) / MAX) * (R - L);
-    const yMid = 80;
+    const top = 34;
+    const bot = 116;
+    const yMid = (top + bot) / 2 + 6;
     const [lo, hi] = C.bench.shareOfRevenue;
     const placed = [];
     const dots = C.peers.slice().sort((a, b) => a.share - b.share).map(p => {
@@ -127,31 +129,36 @@ window.NUTEX_BUDGET = (() => {
       while (placed.some(q => q.lane === lane && Math.abs(q.x - px) < 13)) lane++;
       placed.push({ x: px, lane });
       const py = yMid + (lane % 2 ? 1 : -1) * Math.ceil(lane / 2) * 13;
-      return `<circle cx="${px}" cy="${py}" r="6" fill="var(--c-neutral)" opacity="0.75"><title>${p.name}: ${p.share.toFixed(2)}% of revenue</title></circle>`;
+      return `<circle cx="${px}" cy="${py}" r="6" fill="var(--c-neutral)" opacity="0.8"><title>${p.name}: ${p.share.toFixed(2)}% of revenue</title></circle>`;
     }).join('');
-    const ticks = [0, 0.4, 0.8, 1.2].map(t => `
-      <text x="${x(t)}" y="${H - 4}" text-anchor="${t === 0 ? 'start' : t === MAX ? 'end' : 'middle'}" font-size="11" fill="var(--text-3)">${t.toFixed(1)}%</text>
-    `).join('');
+    const ticks = [0, 0.4, 0.8, 1.2];
+    const anchor = (t) => (t === 0 ? 'start' : t === MAX ? 'end' : 'middle');
     const nx = x(share);
     const bx = x(budgetShare);
+    const eur = (p) => `€${Math.round((revMo * p) / 100 / 1000)}k`;
     return `
-      <svg class="b4-peer-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="AI spend as share of revenue vs peers">
-        <rect x="${x(0)}" y="38" width="${x(lo) - x(0)}" height="80" rx="8" fill="rgba(245,158,11,0.08)"/>
-        <rect x="${x(lo)}" y="38" width="${x(hi) - x(lo)}" height="80" rx="8" fill="rgba(16,185,129,0.13)"/>
-        <rect x="${x(hi)}" y="38" width="${x(MAX) - x(hi)}" height="80" rx="8" fill="rgba(239,68,68,0.07)"/>
-        <text x="${(x(0) + x(lo)) / 2}" y="52" text-anchor="middle" font-size="9.5" font-weight="800" letter-spacing="0.06em" fill="var(--yellow-txt)" opacity="0.8">BELOW</text>
-        <text x="${(x(lo) + x(hi)) / 2}" y="52" text-anchor="middle" font-size="9.5" font-weight="800" letter-spacing="0.06em" fill="var(--green-txt)" opacity="0.85">PEER RANGE ${lo}–${hi}%</text>
-        <text x="${(x(hi) + x(MAX)) / 2}" y="52" text-anchor="middle" font-size="9.5" font-weight="800" letter-spacing="0.06em" fill="var(--red-txt)" opacity="0.7">ABOVE</text>
-        <line x1="${x(stats.median)}" x2="${x(stats.median)}" y1="58" y2="118" stroke="var(--text-3)" stroke-dasharray="3 3"/>
-        <text x="${x(stats.median)}" y="114" text-anchor="end" dx="-4" font-size="9.5" fill="var(--text-3)">median</text>
+      <svg class="b5-peer" viewBox="0 0 ${W} ${H}" role="img" aria-label="AI spend as share of revenue vs peers">
+        <rect x="${x(0)}" y="${top}" width="${x(lo) - x(0)}" height="${bot - top}" fill="rgba(245,158,11,0.08)"/>
+        <rect x="${x(lo)}" y="${top}" width="${x(hi) - x(lo)}" height="${bot - top}" fill="rgba(16,185,129,0.13)"/>
+        <rect x="${x(hi)}" y="${top}" width="${x(MAX) - x(hi)}" height="${bot - top}" fill="rgba(239,68,68,0.07)"/>
+        <text x="${(x(0) + x(lo)) / 2}" y="${top + 14}" text-anchor="middle" font-size="9.5" font-weight="800" letter-spacing="0.06em" fill="var(--yellow-txt)">BELOW</text>
+        <text x="${(x(lo) + x(hi)) / 2}" y="${top + 14}" text-anchor="middle" font-size="9.5" font-weight="800" letter-spacing="0.06em" fill="var(--green-txt)">PEER RANGE</text>
+        <text x="${(x(hi) + x(MAX)) / 2}" y="${top + 14}" text-anchor="middle" font-size="9.5" font-weight="800" letter-spacing="0.06em" fill="var(--red-txt)">ABOVE</text>
+        <line x1="${x(stats.median)}" x2="${x(stats.median)}" y1="${top + 20}" y2="${bot}" stroke="var(--c-neutral-600)" stroke-dasharray="3 3"/>
         ${dots}
-        <line x1="${bx}" x2="${bx}" y1="42" y2="120" stroke="var(--c-primary)" stroke-width="1.6" stroke-dasharray="4 3"/>
-        <text x="${bx}" y="${H - 18}" text-anchor="middle" font-size="10" font-weight="800" fill="var(--c-primary)">budget ${fmtPct(budgetShare)}</text>
+        <line x1="${bx}" x2="${bx}" y1="${top}" y2="${bot + 8}" stroke="var(--c-primary)" stroke-width="2" stroke-dasharray="4 3"/>
         <circle cx="${nx}" cy="${yMid}" r="10" fill="var(--c-ink)" stroke="var(--surface)" stroke-width="3"/>
-        <rect x="${nx - 44}" y="6" width="88" height="20" rx="10" fill="var(--c-ink)"/>
-        <text x="${nx}" y="16" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="800" fill="#FFFFFF">NuTex ${fmtPct(share)}</text>
-        <line x1="${nx}" x2="${nx}" y1="26" y2="${yMid - 10}" stroke="var(--c-ink)" stroke-width="1.5"/>
-        ${ticks}
+        <line x1="${nx}" x2="${nx}" y1="${top - 8}" y2="${bot + 8}" stroke="var(--c-ink)" stroke-width="1.6"/>
+        <rect x="${nx - 46}" y="4" width="92" height="20" rx="10" fill="var(--c-ink)"/>
+        <text x="${nx}" y="14" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="800" fill="var(--surface)">NuTex ${fmtPct(share)}</text>
+
+        <!-- axis 1: % of revenue -->
+        <line x1="${L}" x2="${R}" y1="${bot + 8}" y2="${bot + 8}" stroke="var(--border-hover)"/>
+        ${ticks.map(t => `<line x1="${x(t)}" x2="${x(t)}" y1="${bot + 4}" y2="${bot + 12}" stroke="var(--border-hover)"/>
+          <text x="${x(t)}" y="${bot + 26}" text-anchor="${anchor(t)}" font-size="11" font-weight="600" fill="var(--text-2)">${t.toFixed(1)}%</text>
+          <text x="${x(t)}" y="${bot + 42}" text-anchor="${anchor(t)}" font-size="10.5" fill="var(--text-3)">${eur(t)}</text>`).join('')}
+        <text x="${bx}" y="${bot + 26}" text-anchor="middle" font-size="10.5" font-weight="800" fill="var(--c-primary)" ${Math.abs(bx - x(0.8)) < 34 ? `dx="${bx < x(0.8) ? -22 : 22}"` : ''}>budget</text>
+        <text x="${L}" y="${H - 4}" font-size="10" fill="var(--text-3)">top: % of revenue · below: same point in € per month for NuTex</text>
       </svg>
     `;
   }
@@ -206,16 +213,12 @@ window.NUTEX_BUDGET = (() => {
     const eHi = ePos(revMo * hi / 100);
     const eNow = ePos(all.totalSpendMo);
     const eBud = ePos(all.budgetLimit);
-    const casc = [
-      { label: 'Revenue', val: revMo, note: `${eurK(C.revenueYear)} / year`, w: 100, cls: '' },
-      { label: 'IT budget', val: itMo, note: `${fmtPct(C.itBudgetPct)} of revenue`, w: C.itBudgetPct * 10, cls: '' },
-      {
-        label: 'AI spend / budget', combo: true, cls: 'is-ai',
-        val: all.totalSpendMo, budget: all.budgetLimit,
-        note: `${all.budgetUsedPct}% of budget used · spend ${fmtPct(share)} / budget ${fmtPct(budgetShare)} of revenue`,
-        w: Math.min(100, all.budgetUsedPct),   // spend as share of the AI budget
-        wb: 100
-      }
+    // Aligned table: each bar = share of the row above (IT of revenue, AI budget of IT, spend of AI budget)
+    const tableRows = [
+      { label: 'Revenue', val: revMo, bar: 100, share: `${eurK(C.revenueYear)} / year`, cls: '' },
+      { label: 'IT budget', val: itMo, bar: C.itBudgetPct, share: `${fmtPct(C.itBudgetPct)} of revenue`, cls: '', scale: 10 },
+      { label: 'AI budget', val: all.budgetLimit, bar: pct(all.budgetLimit, itMo), share: `${fmtPct(pct(all.budgetLimit, itMo))} of IT budget`, cls: 'is-budget' },
+      { label: 'AI spend', val: all.totalSpendMo, bar: all.budgetUsedPct, share: `${all.budgetUsedPct}% of AI budget`, cls: 'is-ai', track: true }
     ];
 
     return `
@@ -243,46 +246,40 @@ window.NUTEX_BUDGET = (() => {
           ` : ''}
         </div>
 
-        <section class="b4-hero">
+        <section class="b5-hero-grid">
           <!-- Company context -->
-          <div class="b4-col">
-            <span class="bg-lbl">AI in the company · per month</span>
-            <div class="b4-share"><strong>${fmtPct(share)}</strong><span>of revenue goes to AI</span></div>
-            <div class="b4-casc">
-              ${casc.map(r => `
-                <div class="b4-casc-row ${r.cls}">
-                  <span class="b4-casc-lbl">${r.label}</span>
-                  <strong>${r.combo ? `${eurK(r.val)}<small> / ${eurK(r.budget)}</small>` : eurK(r.val)}</strong>
-                  <span class="b4-casc-bar">${r.combo ? `<b style="width:${Math.min(100, r.wb)}%"></b>` : ''}<i style="width:${Math.min(100, r.w)}%"></i></span>
-                  <span class="b4-casc-note">${r.note}</span>
+          <div class="b5-col">
+            <div class="b5-head"><span class="bg-lbl">AI in the company · per month</span></div>
+            <div class="b5-hero"><strong>${fmtPct(share)}</strong><span>of revenue goes to AI</span></div>
+            <div class="b5-table">
+              <div class="b5-tr b5-th"><span></span><span>per month</span><span></span><span>share</span></div>
+              ${tableRows.map(r => `
+                <div class="b5-tr ${r.cls}">
+                  <span class="b5-lbl">${r.label}</span>
+                  <strong class="b5-val">${eurK(r.val)}</strong>
+                  <span class="b5-bar ${r.track ? 'has-track' : ''}"><i style="width:${Math.max(1.5, Math.min(100, r.bar * (r.scale || 1)))}%"></i></span>
+                  <span class="b5-share">${r.share}</span>
                 </div>
               `).join('')}
             </div>
-            <div class="b4-facts">
-              <span><strong>${eurK(all.totalSpendMo * 12)}</strong> per year (run-rate)</span>
-              <span><strong>${eur(all.totalSpendMo / all.totalEmp)}</strong> per employee / mo</span>
+            <div class="b5-facts">
+              <div><span>Per year</span><strong>${eurK(all.totalSpendMo * 12)}</strong><small>run-rate</small></div>
+              <div><span>Per employee</span><strong>${eur(all.totalSpendMo / all.totalEmp)}</strong><small>per month</small></div>
+              <div><span>Budget left</span><strong class="${all.budgetRemaining >= 0 ? 'text-green' : 'text-red'}">${eurK(Math.abs(all.budgetRemaining))}</strong><small>${all.budgetRemaining >= 0 ? 'this month' : 'over budget'}</small></div>
             </div>
           </div>
 
-          <!-- Peers (compact) -->
-          <div class="b4-col">
-            <div class="b4-peer-head">
-              <span class="bg-lbl">Vs. ${C.peers.length} comparable manufacturers · AI spend as % of revenue</span>
+          <!-- Peers -->
+          <div class="b5-col">
+            <div class="b5-head">
+              <span class="bg-lbl">Vs. ${C.peers.length} comparable manufacturers</span>
               <span class="b4-facts"><span>Rank <strong>${stats.rank}</strong> of ${stats.n}</span><span>Median <strong>${fmtPct(median)}</strong></span></span>
             </div>
-            ${peerChart(share, budgetShare, C, stats)}
-            <div class="b4-euro">
-              <span class="b4-euro-lbl">Peer range for NuTex in €/month</span>
-              <div class="b4-euro-track">
-                <span class="b4-euro-band" style="left:${eLo}%;width:${eHi - eLo}%"></span>
-                <span class="b4-euro-mark b4-euro-now" style="left:${eNow}%" title="Spend today"></span>
-                <span class="b4-euro-mark b4-euro-budget" style="left:${eBud}%" title="Budget"></span>
-              </div>
-              <div class="b4-euro-legend">
-                <span>${eurK(revMo * lo / 100)} – ${eurK(revMo * hi / 100)} in range</span>
-                <span><i class="b4-dot-now"></i>spend ${eurK(all.totalSpendMo)}</span>
-                <span><i class="b4-dot-budget"></i>budget ${eurK(all.budgetLimit)}</span>
-              </div>
+            ${peerChart(share, budgetShare, C, stats, revMo)}
+            <div class="b5-facts">
+              <div><span>Peer range for NuTex</span><strong>${eurK(revMo * lo / 100)} – ${eurK(revMo * hi / 100)}</strong><small>per month</small></div>
+              <div><span>Spend today</span><strong>${eurK(all.totalSpendMo)}</strong><small>${fmtPct(share)} of revenue</small></div>
+              <div><span>Budget</span><strong class="text-blue">${eurK(all.budgetLimit)}</strong><small>${fmtPct(budgetShare)} of revenue</small></div>
             </div>
           </div>
         </section>
