@@ -65,7 +65,10 @@ window.NUTEX_IMPACT = (() => {
     const ni = nowIndex();
     const live = sc.kpis.map(k => ({ k, s: stats(k, ni) })).filter(x => x.s.live);
     const improved = live.filter(x => x.s.better > 2).length;
-    const avgBetter = live.length ? avg(live.map(x => x.s.better)) : 0;
+    // € weighted average (soft facts without € excluded)
+    const priced = live.filter(x => x.k.driver).map(x => ({ w: euroMo(x.k), b: x.s.better }));
+    const wsum = priced.reduce((a, x) => a + x.w, 0);
+    const avgBetter = wsum ? priced.reduce((a, x) => a + x.w * x.b, 0) / wsum : (live.length ? avg(live.map(x => x.s.better)) : 0);
     const best = live.slice().sort((a, b) => b.s.better - a.s.better)[0] || null;
     const euro = sc.kpis.reduce((acc, k) => acc + euroMo(k), 0); // € per month, all KPIs in scope
     return { ...sc, live, improved, avgBetter, best, euro, total: sc.kpis.length };

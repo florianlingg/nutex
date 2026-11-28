@@ -120,9 +120,18 @@ window.NUTEX_PEOPLE = (() => {
     const top = bars[0];
     const maxB = Math.max(...bars.map(b => b.pct), 1);
     const selDept = sel !== 'all' ? D.DEPARTMENTS.find(d => d.id === sel) : null;
-    const dropOff = selDept
-      ? (() => { const r = S.computeDept(selDept, metrics.tf); return r.targetUsers - r.trainedCount; })()
-      : metrics.targetUsers - metrics.trainedCount;
+    // biggest step in target group → license → trained → weekly (same as "Where do we lose employees?")
+    const drop = (() => {
+      const H = S.adoption();
+      const mi = Math.max(0, D.TREND_2026.keys.indexOf(S.state.filters.timeframe));
+      const ids = selDept ? [selDept.id] : S.getAccessibleDepts().map(d => d.id);
+      const sum = (f) => ids.reduce((a, id) => a + H.perDept[id][f][mi], 0);
+      const tg = ids.reduce((a, id) => a + D.DEPARTMENTS.find(d => d.id === id).targetUsers, 0);
+      const st = [['Target group', tg], ['With license', sum('licensed')], ['Trained', sum('trained')], ['Weekly users', sum('weekly')]];
+      let best = { from: st[0][0], to: st[1][0], n: st[0][1] - st[1][1] };
+      for (let i = 2; i < st.length; i++) if (st[i - 1][1] - st[i][1] > best.n) best = { from: st[i - 1][0], to: st[i][0], n: st[i - 1][1] - st[i][1] };
+      return best;
+    })();
 
     const ts = timeSaved(metrics);
     const maxNet = Math.max(...ts.rows.map(r => r.net), TARGET_H) * 1.1;
@@ -171,7 +180,7 @@ window.NUTEX_PEOPLE = (() => {
                 </div>
               `).join('')}
             </div>
-            <div class="pp-foot">Biggest drop-off: <strong>Target group → Trained · ${dropOff} people</strong></div>
+            <div class="pp-foot">Biggest drop-off: <strong>${drop.from} → ${drop.to} · ${Math.max(0, drop.n)} people</strong></div>
           </section>
 
           <!-- 3 · Time saved -->

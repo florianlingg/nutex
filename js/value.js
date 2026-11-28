@@ -248,8 +248,9 @@ window.NUTEX_VALUE = (() => {
     return `
       <section class="card card-lg vl-card" aria-label="Which pilots should we implement?">
         <div class="panel-head">
-          <h3>Which pilots should we implement?</h3>
+          <h3>Return per € spent</h3>
         </div>
+        <div class="b2-q ov-detail-q">Which pilots should we implement?</div>
         <div class="vl-wrap" data-vl-stage>
           <div class="vl-left">
             <span class="vl-lbl">Return per € spent</span>
@@ -264,7 +265,7 @@ window.NUTEX_VALUE = (() => {
             ${driverBar(drivers(valueMo))}
             <button type="button" class="link-btn vl-method-link" data-action="open-method">How is return calculated? →</button>
 
-            <span class="vl-lbl" style="margin-top:12px">${list.length} pilot${list.length === 1 ? '' : 's'} · ${eurK(pv)} return vs ${eurK(pc)} cost</span>
+            <span class="vl-lbl" style="margin-top:12px">${list.length} use case${list.length === 1 ? '' : 's'} · ${eurK(pv)} return vs ${eurK(pc)} cost</span>
             <div class="vl-chips">
               ${counts.map(c => `
                 <span class="vl-chip" data-q="${c.k}" title="${ZONES[c.k].hint}">

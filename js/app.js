@@ -97,6 +97,7 @@
   }
 
   function render() {
+    if (window.NUTEX_ROADMAP) window.NUTEX_ROADMAP.sync();
     const metrics = S.computeMetrics();
     syncTopbar(metrics);
     const key = overlayKey();

@@ -3194,6 +3194,11 @@ body.dark .rm-onpath-ring { stroke: #CBD5E1; }
 .us-team strong { text-align: right; font-size: 11.5px; }
 .us-note { justify-content: space-between; }
 
+/* Review fixes */
+.ov-panel-head { gap: 12px; }
+.ov-asof { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-3); }
+.ov-detail-q { margin: -6px 0 8px; }
+
 /* --- Responsive --- */
 @media (max-width: 1020px) {
   .ov-head, .ov-row, .ov-layout { grid-template-columns: 1fr; }

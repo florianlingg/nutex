@@ -6,6 +6,9 @@
 window.NUTEX_DATA = (() => {
   const THRESHOLDS = { green: 95, yellow: 80 };
 
+  // Data snapshot date for the latest month; earlier months use their last day
+  const DATA_AS_OF = '2026-11-18';
+
   const TARGETS = {
     weeklyPct: 79,          // Company: AI target group 236 of 300 (department targets = own target group)
     dailyPct: 45,           // Employees using AI 3+ days/week
@@ -24,6 +27,12 @@ window.NUTEX_DATA = (() => {
     training:   { source: 'Learning Platform', updated: '2026-11-18', freq: 'Weekly', text: 'Share of employees who completed core AI training.' },
     dataReady:  { source: 'IT Audit', updated: '2026-11-18', freq: 'Weekly', text: 'Data sources meeting all quality & security criteria.' },
     impact:     { source: 'Logs & Finance', updated: '2026-11-18', freq: 'Monthly', text: 'Estimated monthly hours & savings paired with measured process error rate.' },
+    status:       { source: 'Dashboard rules', updated: '2026-11-18', freq: 'Monthly', text: 'On track = target met · Watch = within 15 points of target · Action = more than 15 points below target. Status colors (green / amber / red) are used only for status. Data as of 18 Nov 2026; earlier months show their month-end values.' },
+    roadmapScore: { source: 'AI roadmap', updated: '2026-11-18', freq: 'Weekly', text: 'Roadmap score = milestones done ÷ milestones due by the data date. Milestones planned for later are not counted yet.' },
+    peopleScore:  { source: 'Monthly pulse survey', updated: '2026-11-18', freq: 'Monthly', text: 'People score = average agreement across the 4 survey statements (tools, manager support, clear rules, positive outlook). Target 75%.' },
+    lossShort:    { source: 'Tool logs · HR', updated: '2026-11-18', freq: 'Weekly', text: 'Short = AI target group minus weekly AI users. The line shows trained, licensed and weekly users over time; red markers are changes that cost us weekly users.' },
+    businessImpact: { source: 'Return model · KPI owners', updated: '2026-11-18', freq: 'Monthly', text: 'Headline = average improvement of the business KPIs since each AI go-live, weighted by their € return (soft facts excluded). The € of all KPIs add up to the return in "Return per € spent".' },
+    seats:        { source: 'License management', updated: '2026-11-18', freq: 'Daily', text: 'Seats are licenses per tool. One employee can hold several seats (e.g. Copilot + TextileGPT), so seat counts are higher than the number of licensed employees.' },
     weeklyTarget: { source: 'McKinsey study 2026', updated: '2026-11-18', freq: 'Yearly', text: 'There is no single % target. Each department has its own target: its AI target group — the roles where AI is relevant, sized per department based on a McKinsey study (2026). Target % = target group ÷ employees, e.g. Production 50 of 90 (56%), Sales 50 of 50 (100%). Company: 236 of 300 employees (79%). Status compares weekly users with each department\'s own target.' },
     returnCalc: { source: 'Return model', updated: '2026-11-18', freq: 'Monthly', text: 'Return = time saved + quality + speed & revenue + cost avoided — net, each euro counted once. Soft facts (customer feedback, employee sentiment, compliance risk) are tracked separately, not in €. Details: open the tile → "How is return calculated?"' }
   };
@@ -39,11 +48,11 @@ window.NUTEX_DATA = (() => {
 
   const DEFAULT_RBAC = {
     ceo:           { allDepts: true, financials: true },
-    vp_rd:         { allDepts: true, financials: false },
-    vp_commercial: { allDepts: true, financials: false },
-    vp_production: { allDepts: true, financials: false },
-    vp_logistics:  { allDepts: true, financials: false },
-    vp_purchasing: { allDepts: true, financials: false }
+    vp_rd:         { allDepts: true, financials: true },
+    vp_commercial: { allDepts: true, financials: true },
+    vp_production: { allDepts: true, financials: true },
+    vp_logistics:  { allDepts: true, financials: true },
+    vp_purchasing: { allDepts: true, financials: true }
   };
 
   const TOOLS = [
@@ -190,7 +199,7 @@ window.NUTEX_DATA = (() => {
   const INITIAL_PROJECTS = [
     {
       id: 'p1',
-      name: 'Optical Fabric Defect Camera',
+      name: 'FabricVision', full: 'Optical Fabric Defect Camera — rollout to all looms',
       deptId: 'production',
       owner: 'Dr. Thomas Berg',
       outcome: 'Roll out to all looms: defects −27% (€185,000/yr)',
@@ -200,7 +209,7 @@ window.NUTEX_DATA = (() => {
     },
     {
       id: 'p2',
-      name: 'Raw Yarn Price Forecast',
+      name: 'YarnPrice', full: 'Raw Yarn Price Forecast — all fiber contracts',
       deptId: 'purchasing',
       owner: 'Andreas Richter',
       outcome: 'Scale to all fiber contracts (€120,000/yr)',
@@ -210,7 +219,7 @@ window.NUTEX_DATA = (() => {
     },
     {
       id: 'p3',
-      name: 'Automated Quote & Spec Drafting',
+      name: 'QuoteDraft', full: 'Automated Quote & Spec Drafting',
       deptId: 'sales',
       owner: 'Marcus Weber',
       outcome: 'Quotes 44% faster (€103,000/yr)',
@@ -220,7 +229,7 @@ window.NUTEX_DATA = (() => {
     },
     {
       id: 'p4',
-      name: 'Yarn Formulation Assistant',
+      name: 'YarnLab', full: 'Yarn Formulation Assistant',
       deptId: 'rd',
       owner: 'Sarah Klein',
       outcome: '30% faster lab tests (€118,000/yr)',
@@ -230,7 +239,7 @@ window.NUTEX_DATA = (() => {
     },
     {
       id: 'p5',
-      name: 'Predictive Loom Maintenance',
+      name: 'LoomCare', full: 'Predictive Loom Maintenance',
       deptId: 'production',
       owner: 'Dr. Thomas Berg',
       outcome: 'Blocked: Plant B machine data missing',
@@ -247,7 +256,7 @@ window.NUTEX_DATA = (() => {
       name: 'Shopfloor AI Basics Workshop',
       deptId: 'production',
       owner: 'Dr. Thomas Berg',
-      outcome: 'Train 41 operators · Reach 80% trained',
+      outcome: 'Train 41 shopfloor operators · lift weekly use in Production',
       participants: 41,
       budget: 12000,
       timeline: 'Dec 2026',
@@ -841,7 +850,7 @@ window.NUTEX_DATA = (() => {
     // Each month-to-month step is either exactly one change event below or organic growth.
     trained:  [30, 60, 104, 116, 136, 138, 156, 166, 182, 186, 210],
     licensed: [40, 70, 96, 120, 182, 182, 196, 168, 210, 194, 232],
-    weekly:   [30, 52, 81, 104, 133, 119, 151, 142, 180, 158, 193],
+    weekly:   [30, 60, 89, 120, 149, 135, 166, 157, 195, 173, 193],
     events: [
       {
         id: 'ev-training1', m: 1.9, date: '2 Mar 2026', title: 'AI basics training · wave 1',
@@ -881,7 +890,7 @@ window.NUTEX_DATA = (() => {
       },
       {
         id: 'ev-bootcamp', m: 9.6, date: '20 Oct 2026', title: 'Prompting bootcamp & AI champions',
-        weekly: 35, licensed: 38, trained: 24, recovered: 0, depts: ['sales', 'rd'],
+        weekly: 20, licensed: 38, trained: 24, recovered: 0, depts: ['sales', 'rd'],
         why: 'Champions in every team answered questions on the spot; usage grew fastest where they were active.',
         fix: 'Name champions in Production and Logistics.'
       }
@@ -889,7 +898,7 @@ window.NUTEX_DATA = (() => {
   };
 
   return {
-    THRESHOLDS, TARGETS, KPI_INFO, ROLES, DEFAULT_RBAC, PILOTS, ADOPTION_2026, PEOPLE, COMPANY, IMPACT, RETURN_MODEL,
+    THRESHOLDS, TARGETS, DATA_AS_OF, KPI_INFO, ROLES, DEFAULT_RBAC, PILOTS, ADOPTION_2026, PEOPLE, COMPANY, IMPACT, RETURN_MODEL,
     TOOLS, TIMEFRAMES, DEPARTMENTS, INITIAL_PROJECTS, INITIAL_TRAININGS, SYSTEMS, CULTURE_SURVEY, TREND_2026, I18N
   };
 })();

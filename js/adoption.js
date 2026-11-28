@@ -169,7 +169,7 @@ window.NUTEX_ADOPTION = (() => {
     return `
       <section class="card card-lg ad-card" aria-label="Where did we lose our people?">
         <div class="panel-head">
-          <h3>Where did we lose our people?</h3>
+          <h3>Where do we lose employees?</h3>
         </div>
         <div class="ad-legend">
           ${SERIES.map(x => `<span><i style="background:${x.color}"></i>${x.label}</span>`).join('')}

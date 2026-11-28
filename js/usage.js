@@ -163,7 +163,7 @@ window.NUTEX_USAGE = (() => {
               <div><span>Weekly users</span><strong class="text-${lvl(wkPct, tgt(ids))}">${wkPct}%</strong><small>${l.weekly} of ${l.employees} · target ${tgt(ids)}% (${l.target})</small></div>
               <div><span>Power users</span><strong>${l.power}</strong><small>${pct(l.power, l.employees)}% of employees · 3+ days/week</small></div>
               <div><span>Active days / user</span><strong>${days.toFixed(1)}</strong><small>per week, weekly users</small></div>
-              <div><span>Licensed but inactive</span><strong class="${l.inactive ? 'text-red' : ''}">${l.inactive}</strong><small>no use in 30 days</small></div>
+              <div><span>Licensed but inactive</span><strong class="${l.inactive ? 'text-red' : ''}">${l.inactive}</strong><small>employees (not seats) · no use in 30 days</small></div>
             </div>
 
             <div class="us-sec">
