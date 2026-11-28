@@ -4,11 +4,11 @@
 
 window.NUTEX_CHARTS = (() => {
   const COLORS = {
-    green: '#10B981',
-    yellow: '#F59E0B',
-    red: '#EF4444',
-    blue: '#3B82F6',
-    muted: '#64748B'
+    green: 'var(--green)',
+    yellow: 'var(--yellow)',
+    red: 'var(--red)',
+    blue: 'var(--c-primary)',
+    muted: 'var(--c-neutral-600)'
   };
 
   function color(level) { return COLORS[level] || COLORS.blue; }
@@ -75,9 +75,9 @@ window.NUTEX_CHARTS = (() => {
     const t = window.NUTEX_STATE.t;
     const pct = (n) => purchased > 0 ? Math.round((n / purchased) * 100) : 0;
     const steps = [
-      { label: t('paid_col'),   count: purchased, p: 100, fill: '#475569' },
-      { label: window.NUTEX_STATE.state.lang === 'de' ? 'Zugewiesen' : 'Assigned', count: assigned, p: pct(assigned), fill: '#3B82F6' },
-      { label: t('active_col'), count: active,    p: pct(active), fill: '#10B981' }
+      { label: t('paid_col'),   count: purchased, p: 100, fill: 'var(--c-neutral-600)' },
+      { label: window.NUTEX_STATE.state.lang === 'de' ? 'Zugewiesen' : 'Assigned', count: assigned, p: pct(assigned), fill: 'var(--c-primary)' },
+      { label: t('active_col'), count: active,    p: pct(active), fill: 'var(--c-navy)' }
     ];
     return `
       <div class="funnel-simple">
@@ -105,9 +105,9 @@ window.NUTEX_CHARTS = (() => {
     const wCount = Math.min(trCount, Math.max(0, weekly));
 
     const stages = [
-      { label: t('funnel_all'),     count: base,    pct: 100,                          fill: '#64748B' },
-      { label: t('funnel_target'),  count: tCount,  pct: Math.round((tCount / base) * 100),  fill: '#3B82F6' },
-      { label: t('funnel_trained'), count: trCount, pct: Math.round((trCount / base) * 100), fill: '#8B5CF6' },
+      { label: t('funnel_all'),     count: base,    pct: 100,                          fill: 'var(--c-neutral-600)' },
+      { label: t('funnel_target'),  count: tCount,  pct: Math.round((tCount / base) * 100),  fill: 'var(--c-primary)' },
+      { label: t('funnel_trained'), count: trCount, pct: Math.round((trCount / base) * 100), fill: 'var(--c-navy)' },
       { label: t('funnel_weekly'),  count: wCount,  pct: Math.round((wCount / base) * 100),  fill: color(weeklyLevel) }
     ];
 
@@ -178,18 +178,18 @@ window.NUTEX_CHARTS = (() => {
       <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">
         <defs>
           <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.22"/>
-            <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.0"/>
+            <stop offset="0%" stop-color="var(--c-primary)" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="var(--c-primary)" stop-opacity="0.0"/>
           </linearGradient>
         </defs>
         ${grid}
         ${labels.map((l, i) => `<text x="${x(i).toFixed(1)}" y="${h - 10}" text-anchor="middle" font-size="11" fill="var(--text-3)">${l}</text>`).join('')}
         <polygon points="${areaPts}" fill="url(#trendGrad)"/>
-        <line x1="${padL}" y1="${ty.toFixed(1)}" x2="${w - padR}" y2="${ty.toFixed(1)}" stroke="#10B981" stroke-width="1.6" stroke-dasharray="5,5"/>
-        <text x="${w - padR}" y="${ty - 7}" text-anchor="end" font-size="11" font-weight="600" fill="#10B981">${t('target')} ${target}${unit}</text>
-        <polyline points="${pts}" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+        <line x1="${padL}" y1="${ty.toFixed(1)}" x2="${w - padR}" y2="${ty.toFixed(1)}" stroke="var(--c-neutral)" stroke-width="1.6" stroke-dasharray="5,5"/>
+        <text x="${w - padR}" y="${ty - 7}" text-anchor="end" font-size="11" font-weight="600" fill="var(--text-3)">${t('target')} ${target}${unit}</text>
+        <polyline points="${pts}" fill="none" stroke="var(--c-primary)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
         ${actual.map((v, i) => `
-          <circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4.2" fill="var(--surface)" stroke="#3B82F6" stroke-width="2.4"/>
+          <circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4.2" fill="var(--surface)" stroke="var(--c-primary)" stroke-width="2.4"/>
           <text x="${x(i).toFixed(1)}" y="${y(v) - 11}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text)">${v}${unit}</text>
         `).join('')}
       </svg>

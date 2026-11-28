@@ -6,11 +6,8 @@
    ============================================================================ */
 
 window.NUTEX_ROADMAP = (() => {
-  // Current day (local time) — milestones turn overdue automatically
-  const TODAY = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  })();
+  // Reference date = data date of the selected month (not the system clock)
+  let TODAY = '2026-11-18';
 
   // Phase plan: Pilot (H1 2026) → Scale (H2 2026 – H1 2027) → Embed (H2 2027)
   const PHASES = [
@@ -19,7 +16,7 @@ window.NUTEX_ROADMAP = (() => {
     { id: 'embed', label: 'Embed', from: '2027-07-01', to: '2027-12-31' }
   ];
 
-  const P3 = '3 Production pilots, €120k a year';
+  const P3 = '3 Production pilots (≈ €76k a year)';
 
   const LANES = [
     {
@@ -86,7 +83,8 @@ window.NUTEX_ROADMAP = (() => {
   const daysLate = (iso) => Math.max(0, Math.round((ms(TODAY) - ms(iso)) / 86400000));
 
   function visualState(m) {
-    if (m.status === 'done') return 'done';
+    if (m.status === 'done' && m.date <= TODAY) return 'done';
+    if (m.status === 'done') return 'open';
     if (m.status === 'proposed') return 'proposed';
     return m.date < TODAY ? 'overdue' : 'open';
   }
@@ -100,7 +98,10 @@ window.NUTEX_ROADMAP = (() => {
   }
 
   const ITEM_INDEX = {};
-  const LAYOUT = LANES.map((lane, li) => {
+  let LAYOUT = [];
+  function build() {
+  Object.keys(ITEM_INDEX).forEach(k => delete ITEM_INDEX[k]);
+  LAYOUT = LANES.map((lane, li) => {
     const y = TOP + li * LANE_GAP + 22;
     const placed = lane.items.map(m => {
       const vs = visualState(m);
@@ -116,12 +117,21 @@ window.NUTEX_ROADMAP = (() => {
     });
     return { ...lane, y, placed };
   });
+  }
+  build();
+
+  // Called before every render: re-evaluate milestones for the selected month
+  function sync() {
+    const d = window.NUTEX_STATE ? window.NUTEX_STATE.asOfDate() : TODAY;
+    if (d !== TODAY) { TODAY = d; build(); }
+  }
 
   // ---------- Summary for Overview (traffic light + score) ----------
   function summary() {
+    sync();
     const all = Object.values(ITEM_INDEX);
     const planned = all.filter(m => m.status !== 'proposed');
-    const done = all.filter(m => m.status === 'done').length;
+    const done = all.filter(m => m.visualState === 'done').length;
     const overdue = all.filter(m => m.visualState === 'overdue');
     const dueByToday = done + overdue.length;
     const score = Math.round((done / Math.max(1, dueByToday)) * 100);
@@ -132,7 +142,7 @@ window.NUTEX_ROADMAP = (() => {
       const active = l.placed.filter(m => m.status !== 'proposed');
       return {
         id: l.id, label: l.label, level,
-        done: active.filter(m => m.status === 'done').length,
+        done: active.filter(m => m.visualState === 'done').length,
         total: active.length,
         overdue: od
       };
@@ -156,17 +166,17 @@ window.NUTEX_ROADMAP = (() => {
     const cx = m.x.toFixed(1);
     const cy = m.y;
     const parts = [];
-    if (m.onPath && m.status !== 'done') {
-      parts.push(`<circle class="rm-onpath-ring" cx="${cx}" cy="${cy}" r="${r + 4.5}" fill="none" stroke="#D9622B" stroke-width="1.8"/>`);
+    if (m.onPath && m.visualState !== 'done') {
+      parts.push(`<circle class="rm-onpath-ring" cx="${cx}" cy="${cy}" r="${r + 4.5}" fill="none" stroke="var(--c-navy)" stroke-width="1.8"/>`);
     }
     if (m.visualState === 'done') {
-      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="#2563EB"/>`);
+      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="var(--c-primary)"/>`);
     } else if (m.visualState === 'overdue') {
-      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="#E5484D" stroke-width="2.6"/>`);
+      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="var(--red)" stroke-width="2.6"/>`);
     } else if (m.visualState === 'proposed') {
-      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="#94A3B8" stroke-width="1.8" stroke-dasharray="2.6 2.2"/>`);
+      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="var(--c-neutral)" stroke-width="1.8" stroke-dasharray="2.6 2.2"/>`);
     } else {
-      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="#60A5FA" stroke-width="2.6"/>`);
+      parts.push(`<circle class="rm-dot" cx="${cx}" cy="${cy}" r="${r}" fill="var(--surface)" stroke="var(--c-primary-300)" stroke-width="2.6"/>`);
     }
     parts.push(`<circle cx="${cx}" cy="${cy}" r="15" fill="transparent"/>`);
     if (m.labeled) {
@@ -201,8 +211,8 @@ window.NUTEX_ROADMAP = (() => {
     const tx = xOf(TODAY);
     const inRange = TODAY >= '2026-01-01' && TODAY <= '2027-12-31';
     const PH = {
-      pilot: { fill: '#DBEAFE', text: '#2563EB', band: 'rgba(37,99,235,0.035)', sub: 'done' },
-      scale: { fill: '#2563EB', text: '#FFFFFF', band: 'rgba(37,99,235,0.07)', sub: 'we are here' },
+      pilot: { fill: 'var(--c-primary-100)', text: 'var(--c-primary)', band: 'rgba(37,99,235,0.035)', sub: 'done' },
+      scale: { fill: 'var(--c-primary)', text: '#FFFFFF', band: 'rgba(37,99,235,0.07)', sub: 'we are here' },
       embed: { fill: 'var(--track)', text: 'var(--text-3)', band: 'rgba(148,163,184,0.06)', sub: 'next' }
     };
 
@@ -292,8 +302,8 @@ window.NUTEX_ROADMAP = (() => {
 
   // Milestone filters used by the overlay and the overview tile
   const FILTERS = {
-    critical: { label: 'Critical path', color: '#D9622B', match: (m) => m.onPath && m.status !== 'done' },
-    overdue:  { label: 'Overdue',       color: '#E5484D', match: (m) => m.visualState === 'overdue' }
+    critical: { label: 'Critical path', color: 'var(--c-navy)', match: (m) => m.onPath && m.visualState !== 'done' },
+    overdue:  { label: 'Overdue',       color: 'var(--red)', match: (m) => m.visualState === 'overdue' }
   };
 
   function filterCounts() {
@@ -340,11 +350,11 @@ window.NUTEX_ROADMAP = (() => {
     const gap = 21;
     const h = top + LAYOUT.length * gap;
     const px = (iso) => lx + ((ms(iso) - T0) / (T1 - T0)) * (w - lx - 12);
-    const col = { done: '#2563EB', overdue: '#E5484D', open: '#60A5FA', proposed: '#94A3B8' };
+    const col = { done: 'var(--c-primary)', overdue: 'var(--red)', open: 'var(--c-primary-300)', proposed: 'var(--c-neutral)' };
     const ph = PHASES.map((p, i) => {
       const x1 = px(p.from) + (i ? 1.5 : 0);
       const x2 = px(p.to);
-      const fill = p.id === 'pilot' ? '#DBEAFE' : p.id === 'scale' ? '#2563EB' : 'var(--track)';
+      const fill = p.id === 'pilot' ? 'var(--c-primary-100)' : p.id === 'scale' ? 'var(--c-primary)' : 'var(--track)';
       return `<polygon points="${x1},2 ${x2 - 6},2 ${x2},8.5 ${x2 - 6},15 ${x1},15 ${i ? x1 + 6 : x1},8.5" fill="${fill}"/>`;
     }).join('');
     const rows = LAYOUT.map((l, i) => {
@@ -355,7 +365,7 @@ window.NUTEX_ROADMAP = (() => {
         <path d="M${w - 8},${y - 3.5} L${w - 1},${y} L${w - 8},${y + 3.5} z" fill="var(--border-hover)"/>
         ${l.placed.map(m => {
           const cx = px(m.date).toFixed(1);
-          const ring = m.onPath && m.status !== 'done' ? `<circle cx="${cx}" cy="${y}" r="6.2" fill="none" stroke="#D9622B" stroke-width="1.2"/>` : '';
+          const ring = m.onPath && m.visualState !== 'done' ? `<circle cx="${cx}" cy="${y}" r="6.2" fill="none" stroke="var(--c-navy)" stroke-width="1.2"/>` : '';
           return ring + (m.visualState === 'done'
             ? `<circle cx="${cx}" cy="${y}" r="4" fill="${col.done}"/>`
             : `<circle cx="${cx}" cy="${y}" r="3.6" fill="var(--surface)" stroke="${col[m.visualState]}" stroke-width="1.8" ${m.visualState === 'proposed' ? 'stroke-dasharray="1.8 1.6"' : ''}/>`);
@@ -426,5 +436,5 @@ window.NUTEX_ROADMAP = (() => {
     });
   }
 
-  return { TODAY, LANES, ITEM_INDEX, summary, render, preview, filterChips, bind };
+  return { get TODAY() { return TODAY; }, LANES, ITEM_INDEX, summary, sync, render, preview, filterChips, bind };
 })();

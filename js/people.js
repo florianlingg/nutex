@@ -54,10 +54,10 @@ window.NUTEX_PEOPLE = (() => {
     const netLen = (net / Math.max(0.01, gross)) * c;
     return `
       <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
-        <circle cx="56" cy="56" r="${r}" fill="none" stroke="#F59E0B" stroke-width="12"/>
-        <circle cx="56" cy="56" r="${r}" fill="none" stroke="#10B981" stroke-width="12" stroke-dasharray="${netLen.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 56 56)"/>
+        <circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--c-primary-200)" stroke-width="12"/>
+        <circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--c-primary)" stroke-width="12" stroke-dasharray="${netLen.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 56 56)"/>
         <text x="56" y="53" text-anchor="middle" font-size="20" font-weight="800" fill="var(--text)">${net.toFixed(1)} h</text>
-        <text x="56" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="var(--green-txt)">net saved</text>
+        <text x="56" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="var(--c-primary)">net saved</text>
       </svg>
     `;
   }
@@ -81,12 +81,12 @@ window.NUTEX_PEOPLE = (() => {
     return `
       <svg class="pp-trend" viewBox="0 0 ${W} ${H}" aria-hidden="true">
         ${grid}
-        <line x1="${L}" x2="${R}" y1="${y(target)}" y2="${y(target)}" stroke="#10B981" stroke-dasharray="6 4" stroke-width="1.4"/>
-        <text x="${R}" y="${y(target) - 6}" text-anchor="end" font-size="10.5" font-weight="700" fill="var(--green-txt)">Target ${target}%</text>
-        <polygon points="${x(0)},${B} ${pts} ${x(values.length - 1)},${B}" fill="rgba(59,130,246,0.10)"/>
-        <polyline points="${pts}" fill="none" stroke="#3B82F6" stroke-width="2.4" stroke-linejoin="round"/>
+        <line x1="${L}" x2="${R}" y1="${y(target)}" y2="${y(target)}" stroke="var(--c-neutral)" stroke-dasharray="6 4" stroke-width="1.4"/>
+        <text x="${R}" y="${y(target) - 6}" text-anchor="end" font-size="10.5" font-weight="700" fill="var(--text-3)">Target ${target}%</text>
+        <polygon points="${x(0)},${B} ${pts} ${x(values.length - 1)},${B}" fill="var(--c-primary-050)"/>
+        <polyline points="${pts}" fill="none" stroke="var(--c-primary)" stroke-width="2.4" stroke-linejoin="round"/>
         ${values.map((v, i) => `
-          <circle cx="${x(i)}" cy="${y(v)}" r="${i === values.length - 1 ? 5.5 : 4}" fill="${i === values.length - 1 ? '#3B82F6' : 'var(--surface)'}" stroke="#3B82F6" stroke-width="2"/>
+          <circle cx="${x(i)}" cy="${y(v)}" r="${i === values.length - 1 ? 5.5 : 4}" fill="${i === values.length - 1 ? 'var(--c-primary)' : 'var(--surface)'}" stroke="var(--c-primary)" stroke-width="2"/>
           <text x="${x(i)}" y="${y(v) + 17}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text-2)">${v}%</text>
           <text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--text-3)">${labels[i]}</text>
         `).join('')}
@@ -120,9 +120,18 @@ window.NUTEX_PEOPLE = (() => {
     const top = bars[0];
     const maxB = Math.max(...bars.map(b => b.pct), 1);
     const selDept = sel !== 'all' ? D.DEPARTMENTS.find(d => d.id === sel) : null;
-    const dropOff = selDept
-      ? (() => { const r = S.computeDept(selDept, metrics.tf); return r.targetUsers - r.trainedCount; })()
-      : metrics.targetUsers - metrics.trainedCount;
+    // biggest step in target group → license → trained → weekly (same as "Where do we lose employees?")
+    const drop = (() => {
+      const H = S.adoption();
+      const mi = Math.max(0, D.TREND_2026.keys.indexOf(S.state.filters.timeframe));
+      const ids = selDept ? [selDept.id] : S.getAccessibleDepts().map(d => d.id);
+      const sum = (f) => ids.reduce((a, id) => a + H.perDept[id][f][mi], 0);
+      const tg = ids.reduce((a, id) => a + D.DEPARTMENTS.find(d => d.id === id).targetUsers, 0);
+      const st = [['Target group', tg], ['With license', sum('licensed')], ['Trained', sum('trained')], ['Weekly users', sum('weekly')]];
+      let best = { from: st[0][0], to: st[1][0], n: st[0][1] - st[1][1] };
+      for (let i = 2; i < st.length; i++) if (st[i - 1][1] - st[i][1] > best.n) best = { from: st[i - 1][0], to: st[i][0], n: st[i - 1][1] - st[i][1] };
+      return best;
+    })();
 
     const ts = timeSaved(metrics);
     const maxNet = Math.max(...ts.rows.map(r => r.net), TARGET_H) * 1.1;
@@ -166,12 +175,12 @@ window.NUTEX_PEOPLE = (() => {
               ${bars.map(b => `
                 <div class="pp-q">
                   <div class="pp-q-top"><span>${b.label}</span><strong class="pp-blue">${b.pct}%</strong></div>
-                  <div class="pp-track"><div style="width:${(b.pct / maxB) * 100}%;background:#3B82F6"></div></div>
+                  <div class="pp-track"><div style="width:${(b.pct / maxB) * 100}%;background:var(--c-primary)"></div></div>
                   <span class="pp-note">→ ${b.lever}</span>
                 </div>
               `).join('')}
             </div>
-            <div class="pp-foot">Biggest drop-off: <strong>Target group → Trained · ${dropOff} people</strong></div>
+            <div class="pp-foot">Biggest drop-off: <strong>${drop.from} → ${drop.to} · ${Math.max(0, drop.n)} people</strong></div>
           </section>
 
           <!-- 3 · Time saved -->
@@ -181,7 +190,7 @@ window.NUTEX_PEOPLE = (() => {
               ${donut(ts.net, ts.gross)}
               <div class="pp-time-kpis">
                 <div><span>Time saved (gross)</span><strong>${ts.gross.toFixed(1)} h</strong></div>
-                <div><span><i class="pp-dot-rework"></i>Rework (checking, fixing)</span><strong class="text-yellow">${ts.rework.toFixed(1)} h</strong></div>
+                <div><span><i class="pp-dot-rework"></i>Rework (checking, fixing)</span><strong>${ts.rework.toFixed(1)} h</strong></div>
               </div>
             </div>
             <div class="pp-sub">Net saved by department · target ${TARGET_H.toFixed(1)} h</div>

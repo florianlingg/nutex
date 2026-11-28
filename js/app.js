@@ -88,9 +88,22 @@
     if (el.settingsMenu) el.settingsMenu.innerHTML = V.renderSettingsMenu();
   }
 
+  // Which overlay is open — used to play the open animation only once (no flicker on in-modal clicks)
+  let lastOverlay = '';
+  function overlayKey() {
+    const st = S.state;
+    return [st.roadmapOpen && 'roadmap', st.valueOpen && 'value', st.methodOpen && 'method', st.lossOpen && 'loss',
+      st.impactOpen && 'impact', st.detailOpen && ('detail:' + st.detailOpen)].filter(Boolean).join('|');
+  }
+
   function render() {
+    if (window.NUTEX_ROADMAP) window.NUTEX_ROADMAP.sync();
     const metrics = S.computeMetrics();
     syncTopbar(metrics);
+    const key = overlayKey();
+    const sameOverlay = key && key === lastOverlay;
+    const prevModal = el.viewRoot.querySelector('.ov-modal');
+    const scrollTop = sameOverlay && prevModal ? prevModal.scrollTop : 0;
 
     el.viewRoot.classList.toggle('overview-mode', S.state.activeTab === 'overview');
 
@@ -102,6 +115,13 @@
     else if (S.state.activeTab === 'budget') el.viewRoot.innerHTML = V.renderBudget(metrics);
     else if (S.state.activeTab === 'culture') el.viewRoot.innerHTML = V.renderCulture();
     else el.viewRoot.innerHTML = V.renderDepartments(metrics);
+
+    if (sameOverlay) {
+      el.viewRoot.querySelectorAll('.ov-modal-backdrop').forEach(b => b.classList.add('is-static'));
+      const m = el.viewRoot.querySelector('.ov-modal');
+      if (m) m.scrollTop = scrollTop;
+    }
+    lastOverlay = key;
 
     el.modalRoot.innerHTML = V.renderProjectModal() + V.renderTrainingModal();
     hidePopover();
@@ -204,6 +224,12 @@
         S.state.detailOpen = null;
         render(); return;
       }
+      const usDept = e.target.closest('[data-action="usage-dept"]');
+      if (usDept) {
+        S.state.usageDept = usDept.dataset.dept;
+        render(); return;
+      }
+
       const impKpi = e.target.closest('[data-action="impact-kpi"]');
       if (impKpi) {
         S.state.impactKpi = impKpi.dataset.kpi;
@@ -211,12 +237,20 @@
       }
 
       if (e.target.closest('[data-action="open-loss"]')) {
+        S.state.detailOpen = null;
         S.state.lossOpen = true;
         S.state.detailOpen = null;
         render(); return;
       }
 
+      if (e.target.closest('[data-action="open-method"]')) {
+        S.state.methodOpen = true;
+        S.state.valueOpen = false;
+        render(); return;
+      }
+
       if (e.target.closest('[data-action="open-value"]')) {
+        S.state.methodOpen = false;
         S.state.valueOpen = true;
         S.state.detailOpen = null;
         render(); return;
@@ -244,6 +278,7 @@
         S.state.lossOpen = false;
         S.state.detailOpen = null;
         S.state.impactOpen = false;
+        S.state.methodOpen = false;
         render(); return;
       }
 
@@ -418,7 +453,7 @@
       if (e.key === 'Escape') {
         closeModals();
         if (S.state.todoOpen) { S.state.todoOpen = null; render(); return; }
-        if (S.state.roadmapOpen || S.state.valueOpen || S.state.lossOpen || S.state.detailOpen || S.state.impactOpen) { S.state.roadmapOpen = false; S.state.valueOpen = false; S.state.lossOpen = false; S.state.detailOpen = null; S.state.impactOpen = false; render(); }
+        if (S.state.roadmapOpen || S.state.valueOpen || S.state.lossOpen || S.state.detailOpen || S.state.impactOpen || S.state.methodOpen) { S.state.roadmapOpen = false; S.state.valueOpen = false; S.state.lossOpen = false; S.state.detailOpen = null; S.state.impactOpen = false; S.state.methodOpen = false; render(); }
         if (S.state.showSettings) { S.state.showSettings = false; render(); }
       }
     });

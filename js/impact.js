@@ -11,10 +11,10 @@ window.NUTEX_IMPACT = (() => {
   const S = window.NUTEX_STATE;
   const I = () => D.IMPACT;
   const OFFSET = 3; // series start 3 months before Jan 2026 (Oct–Dec 2025 = pre-AI baseline period)
-  const LINE_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6'];
+  const LINE_COLORS = ['var(--c-primary)', 'var(--c-sky)', 'var(--c-indigo)', 'var(--c-navy)', 'var(--c-light)', 'var(--c-primary-300)', 'var(--c-neutral-600)', 'var(--c-neutral)'];
 
   const avg = (a) => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
-  const fmt = (v, k) => (k.unit === '%' ? `${v.toFixed(1)}%` : k.unit === 'h' ? `${Math.round(v)} h` : k.unit === 'd' ? `${v.toFixed(1)} d` : v.toFixed(1));
+  const fmt = (v, k) => (k.unit === '%' ? `${v.toFixed(1)}%` : k.unit === 'h' ? (v < 12 ? `${v.toFixed(1)} h` : `${Math.round(v)} h`) : k.unit === 'd' ? `${v.toFixed(1)} d` : k.unit === 'k' ? `€${v.toFixed(1)}k` : v.toFixed(1));
 
   function nowIndex() {
     const i = D.TREND_2026.keys.indexOf(S.state.filters.timeframe);
@@ -45,14 +45,32 @@ window.NUTEX_IMPACT = (() => {
     return { live, before, now, rel, better, ctrlBetter, net, delta };
   }
 
+  // € per month of a KPI = the return of the pilots / driver behind it (same model as "Return per €")
+  function euroMo(k) {
+    const VL = window.NUTEX_VALUE;
+    if (!VL || !k.driver) return 0;
+    const total = S.computeMetrics().costSavedMo;
+    if (k.pilots === '*') return VL.drivers(total)[k.driver];
+    const list = VL.pilots();
+    const sum = list.reduce((acc, p) => acc + p.valueMo, 0);
+    const scale = sum > total ? total / sum : 1;
+    return list.filter(p => k.pilots.includes(p.id)).reduce((acc, p) => {
+      const split = p.split || { [p.driver || 'time']: p.valueMo };
+      return acc + (split[k.driver] || 0) * scale;
+    }, 0);
+  }
+
   function summary() {
     const sc = scope();
     const ni = nowIndex();
     const live = sc.kpis.map(k => ({ k, s: stats(k, ni) })).filter(x => x.s.live);
     const improved = live.filter(x => x.s.better > 2).length;
-    const avgBetter = live.length ? avg(live.map(x => x.s.better)) : 0;
+    // € weighted average (soft facts without € excluded)
+    const priced = live.filter(x => x.k.driver).map(x => ({ w: euroMo(x.k), b: x.s.better }));
+    const wsum = priced.reduce((a, x) => a + x.w, 0);
+    const avgBetter = wsum ? priced.reduce((a, x) => a + x.w * x.b, 0) / wsum : (live.length ? avg(live.map(x => x.s.better)) : 0);
     const best = live.slice().sort((a, b) => b.s.better - a.s.better)[0] || null;
-    const euro = live.reduce((s, x) => s + (x.k.euroYear || 0), 0);
+    const euro = sc.kpis.reduce((acc, k) => acc + euroMo(k), 0); // € per month, all KPIs in scope
     return { ...sc, live, improved, avgBetter, best, euro, total: sc.kpis.length };
   }
 
@@ -114,8 +132,8 @@ window.NUTEX_IMPACT = (() => {
         <line x1="${x(g)}" x2="${x(g)}" y1="${T - 8}" y2="${B}" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="3 3"/>
         <text x="${x(g) + 6}" y="${T - 2}" font-size="10.5" font-weight="600" fill="var(--text-3)">AI go-live</text>
         ${k.control ? line(k.control, 'var(--border-hover)', 1.6) : ''}
-        ${line(k.series, '#2563EB', 2.4)}
-        <circle cx="${x(ni)}" cy="${y(st.now)}" r="4" fill="#2563EB"/>
+        ${line(k.series, 'var(--c-primary)', 2.4)}
+        <circle cx="${x(ni)}" cy="${y(st.now)}" r="4" fill="var(--c-primary)"/>
         ${labels.map((l, i) => (i % 2 === 1 || i === labels.length - 1) ? '' : `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" font-size="10" fill="var(--text-3)">${l}</text>`).join('')}
         <text x="${x(labels.length - 1)}" y="${H - 10}" text-anchor="middle" font-size="10" fill="var(--text-3)">${labels[labels.length - 1]}</text>
       </svg>
@@ -135,12 +153,14 @@ window.NUTEX_IMPACT = (() => {
     const st = stats(sel, ni);
     const conf = CONF[sel.confidence];
     const eur = (n) => '€' + Math.round(n / 1000) + 'k';
+    const k1 = (n) => `€${(n / 1000).toFixed(1)}k`;
+    const ret = S.computeMetrics().costSavedMo;
 
     return `
       <div class="ip ip-clean">
         <div class="ip-head">
           <span class="b2-q">What has AI changed for our customers and operations?${sm.fallback ? ' <span class="ov-scope-pill">Company-wide</span>' : ''}</span>
-          <span class="ip-sum">${sm.improved} of ${sm.live.length} KPIs better · ≈ ${eur(sm.euro)} per year</span>
+          <span class="ip-sum">${sm.improved} of ${sm.live.length} KPIs better · KPIs add up to <strong>${k1(sm.euro)}/mo</strong> = Return per € spent (${k1(ret)}/mo)</span>
         </div>
         <div class="ip-grid">
           <div class="ip-list">
@@ -151,7 +171,7 @@ window.NUTEX_IMPACT = (() => {
                 <button type="button" class="ip-row ${k.id === sel.id ? 'is-sel' : ''} ${s.live ? '' : 'is-off'}" data-action="impact-kpi" data-kpi="${k.id}">
                   <span class="ip-row-main">
                     <strong>${k.name}</strong>
-                    <small>${s.live ? `${fmt(s.before, k)} → ${fmt(s.now, k)}` : `go-live ${I().labels[k.goLive]}`}</small>
+                    <small>${s.live ? `${fmt(s.before, k)} → ${fmt(s.now, k)}` : `go-live ${I().labels[k.goLive]}`} · ${k.driver ? `${k1(euroMo(k))}/mo` : 'soft fact'}</small>
                   </span>
                   <b class="${s.live ? (good ? 'text-green' : 'text-red') : 'text-3'}">${s.live ? s.delta : '—'}</b>
                 </button>
@@ -173,7 +193,7 @@ window.NUTEX_IMPACT = (() => {
             ${bigChart(sel, ni)}
             <div class="ip-note">
               ${sel.control ? `<span class="ip-key"><i class="ip-k-main"></i>With AI</span><span class="ip-key"><i class="ip-k-ctrl"></i>${sel.controlLabel}</span><span class="ip-dotsep"></span>` : ''}
-              <span><strong>${sel.driver}</strong> · ${sel.owner.split(' · ')[0]} · ${sel.euroYear ? `≈ ${eur(sel.euroYear)}/yr` : 'value not priced'} · attribution ${conf.label}: ${conf.text(sel)}</span>
+              <span><strong>${sel.driverLabel}</strong> · ${sel.owner.split(' · ')[0]} · ${sel.driver ? `${k1(euroMo(sel))}/mo return (${(D.RETURN_MODEL.drivers.find(d => d.id === sel.driver) || {}).label})` : 'soft fact — tracked, not priced'} · attribution ${conf.label}: ${conf.text(sel)}</span>
             </div>
           </div>
         </div>
@@ -181,5 +201,5 @@ window.NUTEX_IMPACT = (() => {
     `;
   }
 
-  return { summary, mini, render, stats };
+  return { summary, mini, render, stats, euroMo };
 })();

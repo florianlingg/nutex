@@ -39,6 +39,7 @@ window.NUTEX_VIEWS = (() => {
     const n = Number(m[1].replace(/[.,]/g, ''));
     return m[2] ? n * 1000 : n;
   };
+  const k1 = (n) => (Math.abs(n) >= 1000 ? `€${(n / 1000).toFixed(1)}k` : eur(n));
   const eurK = (n) => Math.abs(n) >= 10000 ? `€${(n / 1000).toFixed(Math.abs(n) >= 100000 ? 0 : 1).replace(/\.0$/, '')}k` : eur(n);
   const LV = { green: 'var(--green)', yellow: 'var(--yellow)', red: 'var(--red)', blue: 'var(--blue)', gray: 'var(--border-hover)' };
   const STATUS_TXT = { green: 'On track', yellow: 'Watch', red: 'Action' };
@@ -222,12 +223,12 @@ window.NUTEX_VIEWS = (() => {
 
   // Every tile / to-do detail opens as a pop-up over the overview (same pattern as Value per € spent)
   const DETAILS = {
-    departments: { title: 'Weekly use by department', render: (m) => renderDepartments(m) },
-    culture:     { title: 'Employee sentiment', render: (m) => (window.NUTEX_PEOPLE ? window.NUTEX_PEOPLE.render(m) : renderCulture()) },
-    budget:      { title: 'AI budget', render: (m) => (window.NUTEX_BUDGET ? window.NUTEX_BUDGET.render(m) : renderBudget(m)) },
-    projects:    { title: 'Pilots & AI projects', render: (m) => renderProjects(m) },
-    trainings:   { title: 'Trainings', render: (m) => renderTrainings(m) },
-    licenses:    { title: 'Licenses & seats', render: (m) => renderLicenses(m) },
+    departments: { title: 'Weekly use by department', render: (m) => (window.NUTEX_USAGE ? window.NUTEX_USAGE.render(m) : renderDepartments(m)) },
+    culture:     { title: 'People score', q: 'How do our people feel about AI — and what stops them?', render: (m) => (window.NUTEX_PEOPLE ? window.NUTEX_PEOPLE.render(m) : renderCulture()) },
+    budget:      { title: 'Budget used', render: (m) => (window.NUTEX_BUDGET ? window.NUTEX_BUDGET.render(m) : renderBudget(m)) },
+    projects:    { title: 'AI use cases', q: 'Which use cases are live, waiting for approval or blocked?', render: (m) => renderProjects(m) },
+    trainings:   { title: 'Trainings', q: 'How much of the AI target group is trained — and who is next?', render: (m) => renderTrainings(m) },
+    licenses:    { title: 'Licenses & seats', q: 'Are the licenses we pay for actually used?', render: (m) => renderLicenses(m) },
     readiness:   { title: 'AI readiness · data & systems', render: (m) => renderReadiness(m) }
   };
 
@@ -258,11 +259,11 @@ window.NUTEX_VIEWS = (() => {
     const scoreLevel = rm.score >= 90 ? 'green' : rm.score >= 75 ? 'yellow' : 'red';
     const upcoming = rm.planned - rm.done - rm.overdue.length;
     const t2 = tile({
-      title: 'Roadmap score', level: scoreLevel, action: 'open-roadmap',
+      title: `Roadmap score ${infoBtn('roadmapScore')}`, level: scoreLevel, action: 'open-roadmap',
       hero: rm.score, unit: '%',
       context: `${rm.done} of ${rm.dueByToday} due milestones done`,
       visual: segments([
-        { label: 'Done', n: rm.done, color: 'var(--green)' },
+        { label: 'Done', n: rm.done, color: 'var(--c-primary)' },
         { label: 'Late', n: rm.overdue.length, color: 'var(--red)' },
         { label: 'Upcoming', n: upcoming, color: 'var(--border-hover)' }
       ]),
@@ -295,19 +296,20 @@ window.NUTEX_VIEWS = (() => {
     // ======================= 2 · AI ADOPTION =======================
     const diff = metrics.weeklyPct - metrics.weeklyPrevPct;
     const deptSorted = metrics.rows.slice().sort((a, b) => b.weeklyPct - a.weeklyPct);
-    const lag = deptSorted[deptSorted.length - 1];
+    const lag = deptSorted.slice().sort((a, b) => (a.weeklyPct - S.weeklyTarget([a.dept])) - (b.weeklyPct - S.weeklyTarget([b.dept])))[0];
     const single = metrics.rows.length === 1 ? metrics.rows[0] : null;
+    const wTarget = S.weeklyTarget(metrics.rows);
     const teams = single ? S.getPrivacyTeams(single.dept).slice().sort((a, b) => b.weeklyPct - a.weeklyPct).slice(0, 6) : [];
     const shortTeam = (n) => n.startsWith('Grouped') ? 'Small teams' : n.split(/[\s&]+/)[0];
     const t4 = single ? tile({
-      title: `Weekly use by team · ${single.dept.name}`, level: ppLevel(metrics.weeklyPct, D.TARGETS.weeklyPct), nav: 'departments',
+      title: `Weekly use by team · ${single.dept.name} ${infoBtn('weeklyTarget')}`, level: ppLevel(metrics.weeklyPct, wTarget), nav: 'departments',
       hero: metrics.weeklyPct, unit: '%',
-      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${D.TARGETS.weeklyPct}%`,
+      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${wTarget}%`,
       visual: `
         <div class="ov-donuts" style="grid-template-columns:repeat(${Math.max(4, teams.length)}, 1fr)">
           ${teams.map(tm => `
             <div class="ov-donut" title="${tm.name}: ${tm.weeklyPct}% (${tm.employees} people)">
-              ${donut(tm.weeklyPct, ppLevel(tm.weeklyPct, D.TARGETS.weeklyPct))}
+              ${donut(tm.weeklyPct, ppLevel(tm.weeklyPct, wTarget))}
               <span>${shortTeam(tm.name)}</span>
             </div>
           `).join('')}
@@ -315,27 +317,27 @@ window.NUTEX_VIEWS = (() => {
       `,
       foot: teams.length ? `Lowest: <strong>${teams[teams.length - 1].name} ${teams[teams.length - 1].weeklyPct}%</strong>` : ''
     }) : tile({
-      title: 'Weekly use by department', level: ppLevel(metrics.weeklyPct, D.TARGETS.weeklyPct), nav: 'departments',
+      title: `Weekly use by department ${infoBtn('weeklyTarget')}`, level: ppLevel(metrics.weeklyPct, wTarget), nav: 'departments',
       hero: metrics.weeklyPct, unit: '%',
-      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${D.TARGETS.weeklyPct}%`,
+      context: `<span class="${diff >= 0 ? 'text-green' : 'text-red'}">${diff >= 0 ? '+' : ''}${diff} pp</span> vs. last month · target ${wTarget}%`,
       visual: `
         <div class="ov-donuts">
           ${deptSorted.map(r => `
             <div class="ov-donut ${!isCEO && role.ownDepts.includes(r.dept.id) ? 'is-own' : ''}" title="${r.dept.name}: ${r.weeklyPct}%">
-              ${donut(r.weeklyPct, ppLevel(r.weeklyPct, D.TARGETS.weeklyPct))}
+              ${donut(r.weeklyPct, ppLevel(r.weeklyPct, S.weeklyTarget([r.dept])))}
               <span>${r.dept.name === 'Purchasing' ? 'Purch.' : r.dept.name === 'Production' ? 'Prod.' : r.dept.name === 'Marketing' ? 'Mktg.' : r.dept.name === 'Logistics' ? 'Logist.' : r.dept.name}</span>
             </div>
           `).join('')}
         </div>
       `,
-      foot: lag ? `Lowest: <strong>${lag.dept.name} ${lag.weeklyPct}%</strong>` : ''
+      foot: lag ? `Furthest from target: <strong>${lag.dept.name} ${lag.weeklyPct}% / ${S.weeklyTarget([lag.dept])}%</strong>` : ''
     });
 
     // Where do we lose employees? — Level 1 time horizon (Level 2 opens the loss timeline)
     const AD = window.NUTEX_ADOPTION;
     const ad = AD.summary();
     const t5 = tile({
-      title: 'Where do we lose employees?', level: ppLevel(Math.round((ad.weekly / Math.max(1, ad.target)) * 100), 100), action: 'open-loss',
+      title: `Where do we lose employees? ${infoBtn('lossShort')}`, level: ppLevel(Math.round((ad.weekly / Math.max(1, ad.target)) * 100), 100), action: 'open-loss',
       hero: Math.max(0, ad.gap), unit: ' short',
       context: `weekly users vs. target group ${ad.target}`,
       visual: AD.mini(),
@@ -351,10 +353,10 @@ window.NUTEX_VIEWS = (() => {
     const pLevel = ppLevel(culture.overallPct, 75);
     const weakest = culture.questions.slice().sort((a, b) => a.pct - b.pct)[0];
     const t6 = tile({
-      title: 'People score', level: pLevel, nav: 'culture',
+      title: `People score ${infoBtn('peopleScore')}`, level: pLevel, nav: 'culture',
       hero: culture.overallPct, unit: '%',
       context: `<span class="${pDiff >= 0 ? 'text-green' : 'text-red'}">${pDiff >= 0 ? '+' : ''}${pDiff} pp</span> · ${culture.responsePct}% responded`,
-      visual: sparkline(pSeries, { color: LV[pLevel], ref: 75 }),
+      visual: sparkline(pSeries, { color: 'var(--c-primary)', ref: 75 }),
       foot: weakest ? `Weakest: <strong>${weakest.label}</strong> ${weakest.pct}%` : ''
     });
 
@@ -364,16 +366,16 @@ window.NUTEX_VIEWS = (() => {
       pushTodos.push(todoItem({
         title: isCEO ? `Approve ${pendT.length} training${pendT.length === 1 ? '' : 's'}` : `${pendT.length} training${pendT.length === 1 ? '' : 's'} awaiting CEO`,
         sub: `${pendT.reduce((s, x) => s + x.participants, 0)} employees · closes the training gap`,
-        badge: showFin ? eur(pendT.reduce((s, x) => s + (x.budget || 0), 0)) : null,
+        badge: showFin ? k1(pendT.reduce((s, x) => s + (x.budget || 0), 0)) : null,
         nav: 'trainings',
         suggest: ['nina', 'thomas', 'julia']
       }));
     }
-    if (lag && lag.weeklyPct < D.TARGETS.weeklyPct) {
+    if (lag && lag.weeklyPct < S.weeklyTarget([lag.dept])) {
       pushTodos.push(todoItem({
         title: `Adoption plan for ${lag.dept.name}`,
         sub: `with ${lag.dept.vp}`,
-        badge: `${lag.weeklyPct}%`, level: ppLevel(lag.weeklyPct, D.TARGETS.weeklyPct),
+        badge: `${lag.weeklyPct}% / ${S.weeklyTarget([lag.dept])}%`, level: ppLevel(lag.weeklyPct, S.weeklyTarget([lag.dept])),
         nav: 'departments',
         suggest: ['thomas', 'nina', 'eva']
       }));
@@ -400,11 +402,11 @@ window.NUTEX_VIEWS = (() => {
         labels: D.TREND_2026.labelsEn.slice(0, rSeries.length).map(l => l.split(' ')[0])
       };
       t7 = tile({
-        title: 'Value per € spent', level: rLevel, action: 'open-value',
+        title: `Return per € spent ${infoBtn('returnCalc')}`, level: rLevel, action: 'open-value',
         hero: `€${ratio.toFixed(2)}`,
-        context: `${eurK(metrics.costSavedMo)} value · ${eurK(metrics.totalSpendMo)} cost`,
-        visual: sparkline(rSeries, { color: LV[rLevel], ref: 1 }),
-        foot: `Dashed = break-even · <strong>${metrics.hoursSavedMo.toLocaleString('en-US')} h</strong> saved`
+        context: `${eurK(metrics.costSavedMo)} return · ${eurK(metrics.totalSpendMo)} cost`,
+        visual: sparkline(rSeries, { color: 'var(--c-primary)', ref: 1 }),
+        foot: `<strong>${metrics.hoursSavedMo.toLocaleString('en-US')} h</strong> saved · ${window.NUTEX_VALUE ? Math.round(window.NUTEX_VALUE.drivers(metrics.costSavedMo).hours).toLocaleString('en-US') : '—'} h priced as time`
       });
     } else {
       const hSeries = monthSeries(m => m.hoursSavedMo);
@@ -413,7 +415,7 @@ window.NUTEX_VIEWS = (() => {
         title: 'Hours saved', level: ppLevel(Math.round((metrics.hoursSavedMo / Math.max(1, hT)) * 100), 100), nav: 'departments',
         hero: metrics.hoursSavedMo.toLocaleString('en-US'), unit: ' h',
         context: `per month · target ${hT.toLocaleString('en-US')} h`,
-        visual: sparkline(hSeries, { color: LV.green }),
+        visual: sparkline(hSeries, { color: 'var(--c-primary)' }),
         foot: `Jan → ${metrics.tf.label}`
       });
     }
@@ -424,17 +426,17 @@ window.NUTEX_VIEWS = (() => {
       t8 = tile({
         title: 'Budget used', level: bLevel, nav: 'budget',
         hero: metrics.budgetUsedPct, unit: '%',
-        context: `${eur(metrics.totalSpendMo)} of ${eur(metrics.budgetLimit)}`,
+        context: `${k1(metrics.totalSpendMo)} of ${k1(metrics.budgetLimit)}`,
         visual: segments([
-          { label: 'Licenses', n: metrics.licenseSpendMo, color: '#3B82F6', display: eurK(metrics.licenseSpendMo) },
-          { label: 'Tokens', n: metrics.tokenSpendMo, color: '#8B5CF6', display: eurK(metrics.tokenSpendMo) },
-          { label: 'Projects', n: metrics.projectSpendMo, color: '#10B981', display: eurK(metrics.projectSpendMo) },
-          { label: 'Training', n: metrics.trainingSpendMo, color: '#F59E0B', display: eurK(metrics.trainingSpendMo) },
+          { label: 'Licenses', n: metrics.licenseSpendMo, color: 'var(--c-primary)', display: k1(metrics.licenseSpendMo) },
+          { label: 'Tokens', n: metrics.tokenSpendMo, color: 'var(--c-indigo)', display: k1(metrics.tokenSpendMo) },
+          { label: 'Projects', n: metrics.projectSpendMo, color: 'var(--c-sky)', display: k1(metrics.projectSpendMo) },
+          { label: 'Training', n: metrics.trainingSpendMo, color: 'var(--c-light)', display: k1(metrics.trainingSpendMo) },
           { label: '', n: Math.max(0, metrics.budgetRemaining), color: 'transparent', legend: false }
         ]),
         foot: metrics.budgetRemaining >= 0
-          ? `<strong>${eur(metrics.budgetRemaining)}</strong> left this month`
-          : `<strong class="text-red">${eur(-metrics.budgetRemaining)}</strong> over budget`
+          ? `<strong>${k1(metrics.budgetRemaining)}</strong> left this month`
+          : `<strong class="text-red">${k1(-metrics.budgetRemaining)}</strong> over budget`
       });
     } else {
       t8 = tile({
@@ -454,9 +456,9 @@ window.NUTEX_VIEWS = (() => {
     const im = IM.summary();
     const imLevel = im.avgBetter >= 10 ? 'green' : im.avgBetter >= 3 ? 'yellow' : 'red';
     const t9 = tile({
-      title: 'Business impact', level: im.live.length ? imLevel : 'yellow', action: 'open-impact',
+      title: `Business impact ${infoBtn('businessImpact')}`, level: im.live.length ? imLevel : 'yellow', action: 'open-impact',
       hero: im.live.length ? `+${im.avgBetter.toFixed(0)}` : '—', unit: im.live.length ? '%' : '',
-      context: `${im.improved} of ${im.live.length} KPIs better since AI go-live`,
+      context: `${im.improved} of ${im.live.length} KPIs better · ${eurK(im.euro)}/mo return`,
       visual: IM.mini(),
       foot: im.best ? `Biggest: <strong>${im.best.k.name} ${im.best.s.delta}</strong>` : 'No AI use case live yet'
     });
@@ -465,8 +467,12 @@ window.NUTEX_VIEWS = (() => {
     if (pendN) {
       fundTodos.push(todoItem({
         title: isCEO ? `Approve ${pendN} AI project${pendN === 1 ? '' : 's'}` : `${pendN} project${pendN === 1 ? '' : 's'} awaiting CEO`,
-        sub: `${eurK(metrics.pendingProjects.reduce((s, p) => s + annualValue(p.outcome), 0))}/yr potential`,
-        badge: showFin ? eur(metrics.pendingProjects.reduce((s, p) => s + (p.budget || 0), 0)) : null,
+        sub: (() => {
+          const needMo = metrics.pendingProjects.reduce((s, p) => s + (p.budget || 0), 0) / 12;
+          const gap = needMo - Math.max(0, metrics.budgetRemaining);
+          return `${eurK(metrics.pendingProjects.reduce((s, p) => s + annualValue(p.outcome), 0))}/yr potential${gap > 0 ? ` · <span class="text-red">+${k1(gap)}/mo budget</span>` : ' · fits budget'}`;
+        })(),
+        badge: showFin ? k1(metrics.pendingProjects.reduce((s, p) => s + (p.budget || 0), 0)) : null,
         nav: 'projects',
         suggest: ['paul', 'eva', 'thomas']
       }));
@@ -494,7 +500,8 @@ window.NUTEX_VIEWS = (() => {
       <div class="overview-screen ov-layout">
         <div class="ov-board">
           <div class="ov-panel-head">
-            <span class="ov-head-scope">${single ? `${single.dept.name} · ${single.employees} employees` : isCEO ? 'Company status' : `${role.title} · ${role.name}`} · ${metrics.tf.label}</span>
+            <span class="ov-head-scope">${single ? `${single.dept.name} · ${single.employees} employees` : 'Company status'} · ${metrics.tf.label}</span>
+            <span class="ov-asof">Data as of ${(() => { const [y, mo, d] = S.asOfDate().split('-').map(Number); return `${d} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo - 1]} ${y}`; })()} · Status ${infoBtn('status')}</span>
           </div>
           ${boardBlock({ n: 1, title: 'AI Readiness', question: `Are the foundations in place?${single ? ' <span class="ov-scope-pill">Company-wide</span>' : ''}`, tiles: [t2, t1], cols: 2 })}
           ${boardBlock({ n: 2, title: 'AI Adoption', question: 'Are our people using AI?', tiles: [t4, t5, t6] })}
@@ -525,6 +532,7 @@ window.NUTEX_VIEWS = (() => {
             <button type="button" class="ov-modal-close" data-action="close-roadmap" aria-label="Close">✕</button>
             <section class="card card-lg ov-detail">
               <div class="panel-head ov-detail-head"><h3>${DETAILS[S.state.detailOpen].title}</h3></div>
+              ${DETAILS[S.state.detailOpen].q ? `<div class="b2-q ov-detail-q">${DETAILS[S.state.detailOpen].q}</div>` : ''}
               ${DETAILS[S.state.detailOpen].render(metrics)}
             </section>
           </div>
@@ -535,7 +543,7 @@ window.NUTEX_VIEWS = (() => {
           <div class="ov-modal" role="dialog" aria-label="Business impact">
             <button type="button" class="ov-modal-close" data-action="close-roadmap" aria-label="Close">✕</button>
             <section class="card card-lg ov-detail">
-              <div class="panel-head ov-detail-head"><h3>Business impact since AI go-live</h3></div>
+              <div class="panel-head ov-detail-head"><h3>Business impact</h3></div>
               ${window.NUTEX_IMPACT.render()}
             </section>
           </div>
@@ -543,15 +551,23 @@ window.NUTEX_VIEWS = (() => {
       ` : ''}
       ${S.state.lossOpen && window.NUTEX_ADOPTION ? `
         <div class="ov-modal-backdrop" data-action="close-roadmap">
-          <div class="ov-modal" role="dialog" aria-label="Where did we lose our people?">
+          <div class="ov-modal" role="dialog" aria-label="Where do we lose employees?">
             <button type="button" class="ov-modal-close" data-action="close-roadmap" aria-label="Close">✕</button>
             ${window.NUTEX_ADOPTION.render()}
           </div>
         </div>
       ` : ''}
+      ${S.state.methodOpen && valueData && window.NUTEX_VALUE ? `
+        <div class="ov-modal-backdrop" data-action="close-roadmap">
+          <div class="ov-modal" role="dialog" aria-label="How we calculate return">
+            <button type="button" class="ov-modal-close" data-action="close-roadmap" aria-label="Close">✕</button>
+            ${window.NUTEX_VALUE.renderMethod(valueData.valueMo, metrics.rows.length === 1 ? '· ' + metrics.rows[0].dept.name : '')}
+          </div>
+        </div>
+      ` : ''}
       ${S.state.valueOpen && valueData && window.NUTEX_VALUE ? `
         <div class="ov-modal-backdrop" data-action="close-roadmap">
-          <div class="ov-modal" role="dialog" aria-label="Which pilots should we implement?">
+          <div class="ov-modal" role="dialog" aria-label="Return per € spent">
             <button type="button" class="ov-modal-close" data-action="close-roadmap" aria-label="Close">✕</button>
             ${window.NUTEX_VALUE.render(valueData)}
           </div>
@@ -638,7 +654,7 @@ window.NUTEX_VIEWS = (() => {
               <div class="project-card-top">
                 <div>
                   <h3 class="project-name">${p.name}</h3>
-                  <span class="muted-sm">${deptLabel(p.deptId)} · ${p.owner}</span>
+                  <span class="muted-sm">${p.full ? `${p.full} · ` : ''}${deptLabel(p.deptId)} · ${p.owner}</span>
                 </div>
                 ${statusBadge(p.status)}
               </div>
@@ -674,19 +690,20 @@ window.NUTEX_VIEWS = (() => {
   function renderTrainings(metrics) {
     const role = S.getRole();
     const showFin = S.canViewFinancials();
-    const trnSt = S.getStatus(metrics.trainedPct, D.TARGETS.trainingPct);
+    const trnSt = S.getStatus(metrics.trainedTargetPct, 100);
     const filter = S.state.trainingFilter;
     const list = metrics.trainings.filter(tr => filter === 'all' || tr.status === filter);
 
     const deptBars = metrics.rows
       .slice()
-      .sort((a, b) => a.trainedPct - b.trainedPct)
-      .map(r => ({
+      .map(r => ({ r, p: Math.min(100, Math.round((r.trainedCount / Math.max(1, r.targetUsers)) * 100)) }))
+      .sort((a, b) => a.p - b.p)
+      .map(({ r, p }) => ({
         id: r.dept.id,
         label: r.dept.name,
-        value: r.trainedPct,
-        display: `${r.trainedPct}%`,
-        level: S.getStatus(r.trainedPct, D.TARGETS.trainingPct).level,
+        value: p,
+        display: `${p}%`,
+        level: S.getStatus(p, 100).level,
         isOwn: !role.isCEO && role.ownDepts.includes(r.dept.id)
       }));
 
@@ -695,30 +712,30 @@ window.NUTEX_VIEWS = (() => {
         <div class="hero-row">
           <div class="card card-lg">
             <div class="card-top">
-              <span class="card-title">${t('employees_trained')} ${infoBtn('training')}</span>
+              <span class="card-title">Trained · share of AI target group ${infoBtn('training')}</span>
               <span class="pill pill-${trnSt.level}">${dot(trnSt.level)} ${trnSt.label}</span>
             </div>
             <div class="hero-main">
-              <span class="big-num">${metrics.trainedPct}%</span>
-              <span class="muted-lg">${metrics.untrainedCount} ${t('untrained_suffix')}</span>
+              <span class="big-num">${metrics.trainedTargetPct}%</span>
+              <span class="muted-lg">${metrics.trainedCount} of ${metrics.targetUsers} · ${metrics.toTrain} to go</span>
             </div>
             ${renderProgressLine({
-              pct: metrics.trainedPct,
-              targetPct: D.TARGETS.trainingPct,
+              pct: metrics.trainedTargetPct,
+              targetPct: 100,
               level: trnSt.level
             })}
             <div class="hero-sub">
-              <span>${t('target')} ${D.TARGETS.trainingPct}%</span>
-              <strong class="text-${trnSt.level}">${metrics.trainedPct - D.TARGETS.trainingPct}%</strong>
+              <span>Target: whole AI target group (100%)</span>
+              <strong class="text-${trnSt.level}">${metrics.trainedTargetPct - 100} pp</strong>
             </div>
           </div>
 
           <div class="card card-lg">
-            <div class="panel-head"><h3>${t('by_dept')}</h3></div>
+            <div class="panel-head"><h3>${t('by_dept')} · % of target group trained</h3></div>
             ${C.renderTargetBars({
               items: deptBars,
               max: 100,
-              target: D.TARGETS.trainingPct,
+              target: 100,
               unit: '%',
               compact: true
             })}
@@ -793,8 +810,9 @@ window.NUTEX_VIEWS = (() => {
             </div>
             <div class="hero-main">
               <span class="big-num">${metrics.unusedLicenses}<small> ${t('unused')}</small></span>
-              <span class="muted-lg">/ ${metrics.purchased} ${t('paid')}</span>
+              <span class="muted-lg">/ ${metrics.purchased} ${t('paid')} seats ${infoBtn('seats')}</span>
             </div>
+            <div class="muted-sm" style="margin:-4px 0 8px">Seats = licenses per tool · ${S.adoption ? D.DEPARTMENTS.reduce((a, d) => a + S.adoption().perDept[d.id].licensed[Math.max(0, D.TREND_2026.keys.indexOf(S.state.filters.timeframe))], 0) : '—'} employees hold these seats</div>
             ${C.renderFunnel({ purchased: metrics.purchased, assigned: metrics.assigned, active: metrics.activeSeats })}
             <div class="footnote-split">
               <span><strong>${metrics.openRequests}</strong> ${t('open_requests')}</span>
@@ -862,10 +880,10 @@ window.NUTEX_VIEWS = (() => {
     const level = metrics.budgetUsedPct > 95 ? 'red' : metrics.budgetUsedPct > 80 ? 'yellow' : 'green';
     const spendTotal = Math.max(1, metrics.totalSpendMo);
     const items = [
-      { label: t('ai_licenses'), value: metrics.licenseSpendMo, pct: Math.round((metrics.licenseSpendMo / spendTotal) * 100), color: '#3B82F6' },
-      { label: `${t('api_tokens')} (${metrics.totalTokensM}M)`, value: metrics.tokenSpendMo, pct: Math.round((metrics.tokenSpendMo / spendTotal) * 100), color: '#8B5CF6' },
-      { label: t('approved_projects'), value: metrics.projectSpendMo, pct: Math.round((metrics.projectSpendMo / spendTotal) * 100), color: '#10B981' },
-      { label: t('approved_trainings'), value: metrics.trainingSpendMo, pct: Math.round((metrics.trainingSpendMo / spendTotal) * 100), color: '#F59E0B' }
+      { label: t('ai_licenses'), value: metrics.licenseSpendMo, pct: Math.round((metrics.licenseSpendMo / spendTotal) * 100), color: 'var(--c-primary)' },
+      { label: `${t('api_tokens')} (${metrics.totalTokensM}M)`, value: metrics.tokenSpendMo, pct: Math.round((metrics.tokenSpendMo / spendTotal) * 100), color: 'var(--c-navy)' },
+      { label: t('approved_projects'), value: metrics.projectSpendMo, pct: Math.round((metrics.projectSpendMo / spendTotal) * 100), color: 'var(--green)' },
+      { label: t('approved_trainings'), value: metrics.trainingSpendMo, pct: Math.round((metrics.trainingSpendMo / spendTotal) * 100), color: 'var(--yellow)' }
     ];
 
     const tokenRows = metrics.rows.slice().sort((a, b) => b.tokensM - a.tokensM);
@@ -1122,7 +1140,7 @@ window.NUTEX_VIEWS = (() => {
                       <span class="muted-sm"><strong>${w.votes}</strong> ${t('votes')}</span>
                     </div>
                     <div class="funnel-track" style="height:10px;">
-                      <div class="funnel-fill" style="width:${Math.max(8, Math.round((w.votes / maxVotes) * 100))}%;background:#3B82F6;"></div>
+                      <div class="funnel-fill" style="width:${Math.max(8, Math.round((w.votes / maxVotes) * 100))}%;background:var(--c-primary);"></div>
                     </div>
                   </div>
                 </div>
@@ -1160,13 +1178,6 @@ window.NUTEX_VIEWS = (() => {
           <div class="seg-group">
             <button type="button" class="seg-btn ${S.state.theme === 'light' ? 'active' : ''}" data-set-theme="light">${t('light')}</button>
             <button type="button" class="seg-btn ${S.state.theme === 'dark' ? 'active' : ''}" data-set-theme="dark">${t('dark')}</button>
-          </div>
-        </div>
-        <div class="settings-row">
-          <span class="settings-lbl">${t('language')}</span>
-          <div class="seg-group">
-            <button type="button" class="seg-btn ${S.state.lang === 'en' ? 'active' : ''}" data-set-lang="en">EN</button>
-            <button type="button" class="seg-btn ${S.state.lang === 'de' ? 'active' : ''}" data-set-lang="de">DE</button>
           </div>
         </div>
       </div>

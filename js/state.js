@@ -4,8 +4,8 @@
 
 window.NUTEX_STATE = (() => {
   const D = window.NUTEX_DATA;
-  const STORAGE_KEY = 'nutex_ai_projects_v1';
-  const TRAIN_KEY = 'nutex_ai_trainings_v1';
+  const STORAGE_KEY = 'nutex_ai_projects_v3';
+  const TRAIN_KEY = 'nutex_ai_trainings_v2';
   const BUDGET_KEY = 'nutex_ai_monthly_budget_v2';
   const THEME_KEY = 'nutex_ai_theme_v1';
   const LANG_KEY = 'nutex_ai_lang_v1';
@@ -72,7 +72,7 @@ window.NUTEX_STATE = (() => {
     reallocatedSeats: 0,
     cancelledSeats: 0,
     theme: loadString(THEME_KEY, 'light'),
-    lang: loadString(LANG_KEY, 'en'),
+    lang: 'en', // dashboard is English-only
     showSettings: false,
     roadmapOpen: false,
     roadmapFilter: null,
@@ -82,6 +82,8 @@ window.NUTEX_STATE = (() => {
     budgetEdit: false,
     barrierDept: null,
     impactOpen: false,
+    methodOpen: false,
+    usageDept: null,
     impactKpi: null,
     todoOpen: null,
     delegations: (() => {
@@ -138,6 +140,22 @@ window.NUTEX_STATE = (() => {
     if (state.filters.dept === 'all') return acc;
     const match = acc.filter(d => d.id === state.filters.dept);
     return match.length ? match : acc;
+  }
+
+  // Weekly-use target = AI target group ÷ employees (per department or summed for a scope)
+  // Data date of the selected month (latest month = snapshot date, else month end)
+  function asOfDate() {
+    const k = state.filters.timeframe;
+    if (k === D.TREND_2026.keys[D.TREND_2026.keys.length - 1]) return D.DATA_AS_OF;
+    const m = D.TREND_2026.keys.indexOf(k) + 1;
+    const last = new Date(Date.UTC(2026, m, 0)).getUTCDate();
+    return `2026-${String(m).padStart(2, '0')}-${last}`;
+  }
+
+  function weeklyTarget(depts) {
+    const list = (depts && depts.length ? depts : D.DEPARTMENTS).map(d => (d.dept ? d.dept : d));
+    const emp = list.reduce((a, d) => a + d.employees, 0) || 1;
+    return Math.round((list.reduce((a, d) => a + (d.targetUsers || d.employees), 0) / emp) * 100);
   }
 
   function getStatus(actual, target, lowerIsBetter = false) {
@@ -285,7 +303,8 @@ window.NUTEX_STATE = (() => {
     const idx = Object.fromEntries(depts.map((d, i) => [d.id, i]));
     const novW = depts.map(d => d.weeklyUsers);
     const novT = depts.map(d => d.trainedEmployees);
-    const novL = allocInt(C.licensed[n - 1], depts.map((d, i) => novW[i] + novT[i]));
+    // licensed employees per department (fixed in data, never above the target group)
+    const novL = depts.map((d, i) => d.licensedUsers !== undefined ? d.licensedUsers : allocInt(C.licensed[n - 1], depts.map((x, j) => novW[j] + novT[j]))[i]);
     const nov = { weekly: novW, trained: novT, licensed: novL };
 
     // per event: integer share per department for each field
@@ -317,6 +336,11 @@ window.NUTEX_STATE = (() => {
           return Math.max(0, Math.min(d.employees, v));
         });
       });
+    });
+    // a weekly AI user always holds a license: licensed >= weekly in every month
+    depts.forEach(d => {
+      const h = perDept[d.id];
+      h.licensed = h.licensed.map((v, i) => Math.max(v, h.weekly[i]));
     });
     ADOPT = { labels: C.labels, perDept, events };
     return ADOPT;
@@ -470,6 +494,7 @@ window.NUTEX_STATE = (() => {
       weeklyUsers, weeklyPct, weeklyPrevPct: Math.round(wAvg(r => r.weeklyPrevPct)),
       dailyUsers, dailyPct,
       trainedCount, trainedPct, untrainedCount: totalEmp - trainedCount,
+      trainedTargetPct: Math.min(100, Math.round((trainedCount / Math.max(1, targetUsers)) * 100)), toTrain: Math.max(0, targetUsers - trainedCount),
       purchased, assigned, activeSeats, unusedLicenses, openRequests,
       licenseActivePct,
       monthlyCost, unusedCostMo,
@@ -657,7 +682,7 @@ window.NUTEX_STATE = (() => {
   return {
     state, r1, r2, t, setTheme, setLang, setDelegation,
     getRole, getPerms, canViewDept, canViewFinancials, getAccessibleDepts, getFilteredDepts, adoption,
-    getStatus, addProject, setProjectStatus, getVisibleProjects,
+    getStatus, weeklyTarget, asOfDate, addProject, setProjectStatus, getVisibleProjects,
     addTraining, setTrainingStatus, getVisibleTrainings,
     reallocateSeats, cancelUnusedSeats, resetLicenseActions,
     setMonthlyBudget, increaseBudget, resetMonthlyBudget,

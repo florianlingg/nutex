@@ -238,282 +238,180 @@ window.NUTEX_EXPORT = (() => {
     return { rect, text, progressBar, header, toXml };
   }
 
-  // --- AI-Generated Executive Narrative for the Selected Month ---
-  function buildAISummary(metrics, culture) {
-    const de = S.state.lang === 'de';
-    const ranked = metrics.rows.slice().sort((a, b) => b.weeklyPct - a.weeklyPct);
-    const top = ranked[0];
-    const low = ranked[ranked.length - 1];
-    const showFin = S.canViewFinancials();
-    const eur = (n) => '€' + Math.round(n).toLocaleString(S.state.lang === 'de' ? 'de-DE' : 'en-US');
-
-    if (de) {
-      return {
-        bullets: [
-          `KI-Nutzung im ${metrics.tf.label}: ${metrics.weeklyPct}% (${metrics.weeklyUsers} von ${metrics.totalEmp} MA) nutzen KI wöchentlich — ${top ? `${top.dept.name} führt mit ${top.weeklyPct}%` : ''}, ${low ? `${low.dept.name} liegt bei ${low.weeklyPct}%` : ''}.`,
-          showFin
-            ? `Budget & Lizenzen: ${eur(metrics.totalSpendMo)} von ${eur(metrics.budgetLimit)} (${metrics.budgetUsedPct}%) verbraucht inkl. ${metrics.totalTokensM}M API-Tokens (${eur(metrics.tokenSpendMo)}). ${metrics.unusedLicenses} ungenutzte Lizenzen bieten direktes Einsparpotenzial.`
-            : `Schulung & Lizenzen: ${metrics.trainedPct}% der Belegschaft geschult (${metrics.untrainedCount} offen) und ${metrics.unusedLicenses} bezahlte Lizenzen aktuell ungenutzt.`,
-          `Kultur & Pipeline: ${culture.overallPct}% positive Rückmeldung in der Monatsumfrage (Top-Wunsch: ${culture.wishRanking[0]?.name || '—'}). ${metrics.pendingProjects.length} Projekt- und ${metrics.pendingTrainings.length} Schulungsanträge warten auf Entscheidung.`
-        ],
-        actions: [
-          `${metrics.pendingProjects.length} offene KI-Projekte & ${metrics.pendingTrainings.length} Schulungsbudgets entscheiden`,
-          `${Math.min(metrics.unusedLicenses, metrics.openRequests)} ungenutzte Lizenzen auf offene Anfragen umverteilen`,
-          low ? `Gezieltes KI-Training & Support für ${low.dept.name} (${low.trainedPct}% geschult) starten` : 'Trainingsquote Richtung 80%-Ziel ausbauen'
-        ]
-      };
-    }
-
-    return {
-      bullets: [
-        `AI adoption in ${metrics.tf.label}: ${metrics.weeklyPct}% (${metrics.weeklyUsers} of ${metrics.totalEmp} employees) use AI weekly — ${top ? `${top.dept.name} leads at ${top.weeklyPct}%` : ''}, while ${low ? `${low.dept.name} trails at ${low.weeklyPct}%` : ''}.`,
-        showFin
-          ? `Budget & licenses: ${eur(metrics.totalSpendMo)} of ${eur(metrics.budgetLimit)} (${metrics.budgetUsedPct}%) spent, including ${metrics.totalTokensM}M API tokens (${eur(metrics.tokenSpendMo)}). ${metrics.unusedLicenses} unused seats can be reallocated or cut.`
-          : `Training & licenses: ${metrics.trainedPct}% trained (${metrics.untrainedCount} remaining) with ${metrics.unusedLicenses} paid licenses currently unused.`,
-        `Culture & pipeline: ${culture.overallPct}% positive employee pulse (top requested tool: ${culture.wishRanking[0]?.name || '—'}). ${metrics.pendingProjects.length} project and ${metrics.pendingTrainings.length} training proposals await approval.`
-      ],
-      actions: [
-        `Decide on ${metrics.pendingProjects.length} pending AI projects & ${metrics.pendingTrainings.length} training budgets`,
-        `Reallocate ${Math.min(metrics.unusedLicenses, metrics.openRequests)} unused licenses to fill open requests`,
-        low ? `Focus hands-on enablement on ${low.dept.name} (${low.trainedPct}% trained)` : 'Close remaining gap to 80% training target'
-      ]
-    };
-  }
-
+  // ===========================================================================
+  // Employee update deck: shared with ALL employees.
+  // Fairness rules: percentages, ratios and trends only — no € amounts, no
+  // headcounts, no individual names; departments compared to their OWN target.
+  // ===========================================================================
   function generatePptxBytes() {
-    const P = getPalette();
-    const t = S.t;
-    const de = S.state.lang === 'de';
+    const P = {
+      bg: 'FFFFFF', surface: 'FFFFFF', soft: 'F5F8FF', track: 'E5EAF2', border: 'E2E8F0',
+      text: '0F172A', text2: '475569', muted: '64748B',
+      blue: '2563EB', navy: '1E3A8A', light: 'DBEAFE', sky: '0EA5E9', indigo: '6366F1',
+      green: '10B981', yellow: 'F59E0B', red: 'EF4444', purple: '6366F1'
+    };
+    const TOTAL = 6;
+    const saved = { dept: S.state.filters.dept };
+    S.state.filters.dept = 'all';
+    if (window.NUTEX_ROADMAP) window.NUTEX_ROADMAP.sync();
     const metrics = S.computeMetrics();
     const culture = S.computeCulture();
-    const role = S.getRole();
-    const showFin = S.canViewFinancials();
-    const ai = buildAISummary(metrics, culture);
-    const eur = (n) => '€' + Math.round(n).toLocaleString(S.state.lang === 'de' ? 'de-DE' : 'en-US');
-    const deptName = (id) => D.DEPARTMENTS.find(d => d.id === id)?.name || id;
-    const scopeText = `${metrics.tf.label} · ${metrics.totalEmp} ${t('employees')} · ${role.name} (${role.title})`;
+    const R = window.NUTEX_ROADMAP;
+    const rm = R ? R.summary() : null;
+    const IM = window.NUTEX_IMPACT;
+    const im = IM ? IM.summary() : null;
+    const U = window.NUTEX_USAGE;
+    const mi = Math.max(0, D.TREND_2026.keys.indexOf(S.state.filters.timeframe));
+    const ladder = U ? U.sum(D.DEPARTMENTS.map(d => d.id), mi) : null;
+    const month = metrics.tf.label;
+    const [ay, am, ad] = S.asOfDate().split('-').map(Number);
+    const asOf = `${ad} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][am - 1]} ${ay}`;
+    const pct = (n, d) => Math.round((n / Math.max(1, d)) * 100);
+    const lvl = (v, t) => (v >= t ? 'green' : v >= t - 15 ? 'yellow' : 'red');
+    const col = (l) => (l === 'green' ? P.green : l === 'yellow' ? P.yellow : P.red);
+    const wTarget = S.weeklyTarget(metrics.rows);
 
-    // --- SLIDE 1: Title, 3 Hero KPIs & AI Executive Summary ---
+    function frame(s, title, sub, n) {
+      s.rect({ x: 0, y: 0, w: 13.333, h: 0.12, fill: P.blue, radius: 0 });
+      s.text({ x: 0.65, y: 0.42, w: 10.5, h: 0.5, content: title, size: 26, bold: true });
+      s.text({ x: 0.65, y: 0.95, w: 10.5, h: 0.3, content: sub, size: 13, color: P.muted });
+      s.text({ x: 11.2, y: 0.5, w: 1.5, h: 0.3, content: `${n} / ${TOTAL}`, size: 11, color: P.muted, align: 'r' });
+      s.text({ x: 0.65, y: 7.05, w: 12, h: 0.25, content: `NuTex AI update · ${month} · data as of ${asOf} · all figures in % of the relevant group`, size: 9, color: P.muted });
+    }
+    function card(s, x, y, w, h) { s.rect({ x, y, w, h, fill: P.soft, border: P.border, radius: 0.06 }); }
+    function kpi(s, x, y, w, label, value, sub, color = P.text) {
+      card(s, x, y, w, 1.55);
+      s.text({ x: x + 0.25, y: y + 0.2, w: w - 0.5, h: 0.3, content: label, size: 12, color: P.text2, bold: true });
+      s.text({ x: x + 0.25, y: y + 0.5, w: w - 0.5, h: 0.6, content: value, size: 34, bold: true, color });
+      s.text({ x: x + 0.25, y: y + 1.12, w: w - 0.5, h: 0.3, content: sub, size: 11, color: P.muted });
+    }
+
+    // ---- 1 · Title & three headline numbers
     const s1 = createSlideBuilder(P);
-    s1.text({ x: 0.65, y: 0.55, w: 11.5, h: 0.65, content: de ? `AI Executive Report — ${metrics.tf.label}` : `AI Executive Report — ${metrics.tf.label}`, size: 32, bold: true });
-    s1.text({ x: 0.65, y: 1.22, w: 10.5, h: 0.32, content: scopeText, size: 13, color: P.muted });
-
-    const heroCards = [
-      {
-        title: t('employees_using_ai'),
-        val: `${metrics.weeklyPct}%`,
-        sub: `${metrics.weeklyUsers} / ${metrics.totalEmp} · ${t('target')} ${D.TARGETS.weeklyPct}%`,
-        pct: metrics.weeklyPct, tgt: D.TARGETS.weeklyPct,
-        col: statusHex(S.getStatus(metrics.weeklyPct, D.TARGETS.weeklyPct).level, P)
-      },
-      {
-        title: t('employees_trained'),
-        val: `${metrics.trainedPct}%`,
-        sub: `${metrics.untrainedCount} ${t('untrained_suffix')} · ${t('target')} ${D.TARGETS.trainingPct}%`,
-        pct: metrics.trainedPct, tgt: D.TARGETS.trainingPct,
-        col: statusHex(S.getStatus(metrics.trainedPct, D.TARGETS.trainingPct).level, P)
-      },
-      showFin ? {
-        title: t('monthly_budget'),
-        val: eur(metrics.totalSpendMo),
-        sub: `${metrics.budgetUsedPct}% / ${eur(metrics.budgetLimit)} · ${metrics.totalTokensM}M ${t('tokens_short')}`,
-        pct: metrics.budgetUsedPct, tgt: 100,
-        col: statusHex(metrics.budgetUsedPct > 95 ? 'red' : metrics.budgetUsedPct > 80 ? 'yellow' : 'green', P)
-      } : {
-        title: t('nav_culture'),
-        val: `${culture.overallPct}%`,
-        sub: `${culture.totalResponses} / ${culture.totalEmp} ${t('responses')}`,
-        pct: culture.overallPct, tgt: 75,
-        col: statusHex(S.getStatus(culture.overallPct, 75).level, P)
-      }
+    s1.rect({ x: 0, y: 0, w: 13.333, h: 7.5, fill: P.navy, radius: 0 });
+    s1.text({ x: 0.8, y: 1.0, w: 11.5, h: 0.4, content: `${month} · for all NuTex employees`, size: 14, color: 'BFDBFE' });
+    s1.text({ x: 0.8, y: 1.45, w: 11.5, h: 1.2, content: 'AI at NuTex — where we stand', size: 40, bold: true, color: 'FFFFFF' });
+    s1.text({ x: 0.8, y: 2.55, w: 11.5, h: 0.5, content: 'A transparent monthly update on our AI roadmap, how we use AI and what it changes.', size: 16, color: 'DBEAFE' });
+    const heads = [
+      ['Use AI every week', `${metrics.weeklyPct}%`, `of all employees · target ${wTarget}%`],
+      ['Roadmap on schedule', rm ? `${rm.score}%` : '—', 'of due milestones done'],
+      ['People score', `${culture.overallPct}%`, 'positive in the monthly pulse · target 75%']
     ];
-
-    heroCards.forEach((c, idx) => {
-      const cx = 0.65 + idx * 4.12;
-      s1.rect({ x: cx, y: 1.78, w: 3.85, h: 2.05, fill: P.surface, border: P.border, radius: 0.08 });
-      s1.text({ x: cx + 0.25, y: 2.0, w: 3.35, h: 0.3, content: c.title, size: 12, bold: true, color: P.text2 });
-      s1.text({ x: cx + 0.25, y: 2.38, w: 3.35, h: 0.65, content: c.val, size: 34, bold: true, color: P.text });
-      s1.progressBar({ x: cx + 0.25, y: 3.16, w: 3.35, h: 0.13, pct: c.pct, targetPct: c.tgt, fillColor: c.col });
-      s1.text({ x: cx + 0.25, y: 3.42, w: 3.35, h: 0.28, content: c.sub, size: 11, color: P.muted });
+    heads.forEach((h, i) => {
+      const x = 0.8 + i * 4.0;
+      s1.rect({ x, y: 3.6, w: 3.7, h: 1.9, fill: '1E40AF', radius: 0.06 });
+      s1.text({ x: x + 0.3, y: 3.8, w: 3.2, h: 0.3, content: h[0], size: 13, color: 'BFDBFE', bold: true });
+      s1.text({ x: x + 0.3, y: 4.15, w: 3.2, h: 0.8, content: h[1], size: 44, bold: true, color: 'FFFFFF' });
+      s1.text({ x: x + 0.3, y: 4.95, w: 3.2, h: 0.4, content: h[2], size: 11, color: 'BFDBFE' });
     });
+    s1.text({ x: 0.8, y: 6.7, w: 11.5, h: 0.3, content: `Data as of ${asOf}. All figures are shares of the relevant group — no individual or salary data.`, size: 10, color: '93C5FD' });
 
-    // AI Executive Summary Box
-    s1.rect({ x: 0.65, y: 4.15, w: 12.03, h: 2.72, fill: P.surface, border: P.border, radius: 0.07 });
-    s1.rect({ x: 0.65, y: 4.15, w: 0.09, h: 2.72, fill: P.blue, radius: 0 });
-    s1.text({ x: 0.95, y: 4.38, w: 10, h: 0.35, content: de ? 'KI-Zusammenfassung (Executive Summary)' : 'AI Executive Summary', size: 15, bold: true, color: P.blue });
-    ai.bullets.forEach((b, i) => {
-      s1.text({ x: 0.95, y: 4.86 + i * 0.62, w: 11.4, h: 0.56, content: `•  ${b}`, size: 12.5, color: P.text2 });
-    });
-
-    // --- SLIDE 2: AI Adoption by Department & Tools ---
+    // ---- 2 · AI readiness (roadmap)
     const s2 = createSlideBuilder(P);
-    s2.header(t('ai_adoption'), scopeText, 2);
-
-    // Left Card: By Department
-    s2.rect({ x: 0.65, y: 1.4, w: 6.3, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s2.text({ x: 0.95, y: 1.65, w: 5.5, h: 0.35, content: `${t('usage_by_dept')} (${t('target')} ${D.TARGETS.weeklyPct}%)`, size: 15, bold: true });
-
-    const rankedDepts = metrics.rows.slice().sort((a, b) => b.weeklyPct - a.weeklyPct);
-    rankedDepts.forEach((r, i) => {
-      const ry = 2.25 + i * 0.72;
-      const col = statusHex(S.getStatus(r.weeklyPct, D.TARGETS.weeklyPct).level, P);
-      s2.text({ x: 0.95, y: ry, w: 1.45, h: 0.35, content: r.dept.name, size: 13, bold: true, color: P.text2, valign: 'ctr' });
-      s2.progressBar({ x: 2.45, y: ry + 0.08, w: 3.4, h: 0.2, pct: r.weeklyPct, targetPct: D.TARGETS.weeklyPct, fillColor: col });
-      s2.text({ x: 5.95, y: ry, w: 0.8, h: 0.35, content: `${r.weeklyPct}%`, size: 13, bold: true, align: 'r', valign: 'ctr' });
-    });
-
-    // Right Card: By Tool
-    s2.rect({ x: 7.25, y: 1.4, w: 5.43, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s2.text({ x: 7.55, y: 1.65, w: 4.8, h: 0.35, content: `${t('usage_by_tool')} (${t('active_seats')})`, size: 15, bold: true });
-
-    const rankedTools = metrics.toolUsage.slice().sort((a, b) => b.activePct - a.activePct);
-    rankedTools.forEach((tool, i) => {
-      const ry = 2.3 + i * 0.95;
-      const col = statusHex(S.getStatus(tool.activePct, D.TARGETS.licenseActivePct).level, P);
-      s2.text({ x: 7.55, y: ry, w: 3.6, h: 0.3, content: tool.name, size: 13, bold: true, color: P.text });
-      s2.text({ x: 11.2, y: ry, w: 1.15, h: 0.3, content: `${tool.activePct}%`, size: 13, bold: true, align: 'r', color: col });
-      s2.progressBar({ x: 7.55, y: ry + 0.38, w: 4.8, h: 0.18, pct: tool.activePct, targetPct: D.TARGETS.licenseActivePct, fillColor: col });
-    });
-
-    // --- SLIDE 3: Projects & Trainings Pipeline ---
-    const s3 = createSlideBuilder(P);
-    s3.header(`${t('nav_projects')} & ${t('nav_trainings')}`, scopeText, 3);
-
-    // Left: Projects
-    s3.rect({ x: 0.65, y: 1.4, w: 5.9, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s3.text({ x: 0.95, y: 1.65, w: 5.3, h: 0.35, content: `${t('nav_projects')} (${metrics.pendingProjects.length} ${t('Pending')})`, size: 15, bold: true });
-    metrics.projects.slice(0, 4).forEach((p, i) => {
-      const ry = 2.18 + i * 1.12;
-      const pCol = p.status === 'Approved' ? P.green : p.status === 'Pending' ? P.yellow : p.status === 'Blocked' ? P.red : P.muted;
-      s3.rect({ x: 0.92, y: ry, w: 5.36, h: 0.96, fill: P.soft, border: P.border, radius: 0.08 });
-      s3.text({ x: 1.1, y: ry + 0.1, w: 3.9, h: 0.28, content: `${p.name} (${deptName(p.deptId)})`, size: 12, bold: true });
-      s3.text({ x: 5.05, y: ry + 0.1, w: 1.05, h: 0.28, content: t(p.status), size: 11, bold: true, color: pCol, align: 'r' });
-      s3.text({ x: 1.1, y: ry + 0.42, w: 4.95, h: 0.42, content: `${p.outcome}${showFin && p.budget ? ` · ${eur(p.budget)}` : ''}`, size: 11, color: P.text2 });
-    });
-
-    // Right: Trainings
-    s3.rect({ x: 6.8, y: 1.4, w: 5.88, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s3.text({ x: 7.1, y: 1.65, w: 5.3, h: 0.35, content: `${t('nav_trainings')} (${metrics.trainedPct}% ${t('trained_suffix')})`, size: 15, bold: true });
-    metrics.trainings.slice(0, 4).forEach((tr, i) => {
-      const ry = 2.18 + i * 1.12;
-      const trCol = tr.status === 'Approved' ? P.green : tr.status === 'Pending' ? P.yellow : P.muted;
-      s3.rect({ x: 7.07, y: ry, w: 5.34, h: 0.96, fill: P.soft, border: P.border, radius: 0.08 });
-      s3.text({ x: 7.25, y: ry + 0.1, w: 3.9, h: 0.28, content: `${tr.name} (${tr.participants} ${t('emp')})`, size: 12, bold: true });
-      s3.text({ x: 11.2, y: ry + 0.1, w: 1.05, h: 0.28, content: t(tr.status), size: 11, bold: true, color: trCol, align: 'r' });
-      s3.text({ x: 7.25, y: ry + 0.42, w: 4.95, h: 0.42, content: `${tr.outcome}${showFin && tr.budget ? ` · ${eur(tr.budget)}` : ''}`, size: 11, color: P.text2 });
-    });
-
-    // --- SLIDE 4: Licenses & Budget / API Tokens ---
-    const s4 = createSlideBuilder(P);
-    s4.header(showFin ? `${t('nav_licenses')}, ${t('nav_budget')} & Tokens` : t('nav_licenses'), scopeText, 4);
-
-    // Left: Licenses
-    s4.rect({ x: 0.65, y: 1.4, w: 5.8, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s4.text({ x: 0.95, y: 1.65, w: 5.2, h: 0.35, content: t('licenses'), size: 15, bold: true });
-    s4.text({ x: 0.95, y: 2.15, w: 5.2, h: 0.55, content: `${metrics.unusedLicenses} ${t('unused')} / ${metrics.purchased} ${t('paid')}`, size: 22, bold: true });
-    const lSteps = [
-      { l: t('paid_col'), v: metrics.purchased, p: 100, c: '475569' },
-      { l: de ? 'Zugewiesen' : 'Assigned', v: metrics.assigned, p: Math.round((metrics.assigned / Math.max(1, metrics.purchased)) * 100), c: P.blue },
-      { l: t('active_col'), v: metrics.activeSeats, p: metrics.licenseActivePct, c: P.green }
-    ];
-    lSteps.forEach((st, i) => {
-      const ry = 2.95 + i * 0.95;
-      s4.text({ x: 0.95, y: ry, w: 3.0, h: 0.3, content: st.l, size: 12.5, color: P.text2 });
-      s4.text({ x: 4.0, y: ry, w: 2.15, h: 0.3, content: `${st.v} (${st.p}%)`, size: 12.5, bold: true, align: 'r' });
-      s4.progressBar({ x: 0.95, y: ry + 0.36, w: 5.2, h: 0.2, pct: st.p, fillColor: st.c });
-    });
-    s4.text({ x: 0.95, y: 6.1, w: 5.2, h: 0.4, content: `${metrics.openRequests} ${t('open_requests')}${showFin ? ` · ${eur(metrics.costPerActive)} ${t('per_active_user')}` : ''}`, size: 12, color: P.muted });
-
-    // Right: Budget & Tokens (CEO) or Dept License Breakdown (VP)
-    s4.rect({ x: 6.75, y: 1.4, w: 5.93, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    if (showFin) {
-      s4.text({ x: 7.05, y: 1.65, w: 5.3, h: 0.35, content: `${t('monthly_budget')} & ${t('token_usage_cost')}`, size: 15, bold: true });
-      s4.text({ x: 7.05, y: 2.15, w: 5.3, h: 0.55, content: `${eur(metrics.totalSpendMo)} / ${eur(metrics.budgetLimit)} (${metrics.budgetUsedPct}%)`, size: 22, bold: true });
-      const spTotal = Math.max(1, metrics.totalSpendMo);
-      const bItems = [
-        { l: t('ai_licenses'), v: metrics.licenseSpendMo, c: P.blue },
-        { l: `${t('api_tokens')} (${metrics.totalTokensM}M)`, v: metrics.tokenSpendMo, c: P.purple },
-        { l: t('approved_projects'), v: metrics.projectSpendMo, c: P.green },
-        { l: t('approved_trainings'), v: metrics.trainingSpendMo, c: P.yellow }
-      ];
-      bItems.forEach((bi, i) => {
-        const ry = 2.95 + i * 0.85;
-        const pct = Math.round((bi.v / spTotal) * 100);
-        s4.text({ x: 7.05, y: ry, w: 3.4, h: 0.28, content: bi.l, size: 12, color: P.text2 });
-        s4.text({ x: 10.5, y: ry, w: 1.85, h: 0.28, content: `${eur(bi.v)} (${pct}%)`, size: 12, bold: true, align: 'r' });
-        s4.progressBar({ x: 7.05, y: ry + 0.34, w: 5.3, h: 0.16, pct, fillColor: bi.c });
+    frame(s2, 'Are the foundations in place?', `AI roadmap · phase ${rm ? rm.phase : '—'}`, 2);
+    if (rm) {
+      kpi(s2, 0.65, 1.55, 3.6, 'Roadmap on schedule', `${rm.score}%`, 'of milestones due so far are done', P.blue);
+      card(s2, 4.5, 1.55, 8.18, 3.0);
+      s2.text({ x: 4.8, y: 1.75, w: 7.5, h: 0.3, content: 'Progress per area · planned milestones done', size: 13, bold: true });
+      rm.lanes.forEach((l, i) => {
+        const y = 2.25 + i * 0.55;
+        const p = pct(l.done, l.total);
+        s2.text({ x: 4.8, y, w: 1.8, h: 0.3, content: l.label, size: 12, color: P.text2 });
+        s2.progressBar({ x: 6.7, y: y + 0.07, w: 4.6, h: 0.18, pct: p, fillColor: P.blue });
+        s2.text({ x: 11.45, y, w: 1.0, h: 0.3, content: `${p}%`, size: 12, bold: true, align: 'r' });
       });
-    } else {
-      s4.text({ x: 7.05, y: 1.65, w: 5.3, h: 0.35, content: `${t('licenses')} · ${t('by_dept')}`, size: 15, bold: true });
-      metrics.rows.slice().sort((a, b) => b.unusedLicenses - a.unusedLicenses).forEach((r, i) => {
-        const ry = 2.3 + i * 0.72;
-        s4.text({ x: 7.05, y: ry, w: 2.1, h: 0.32, content: r.dept.name, size: 13, bold: true });
-        s4.text({ x: 9.2, y: ry, w: 1.6, h: 0.32, content: `${r.activeSeats}/${r.purchased} ${t('active')}`, size: 12, color: P.text2 });
-        s4.text({ x: 10.85, y: ry, w: 1.5, h: 0.32, content: `${r.unusedLicenses} ${t('unused')}`, size: 12, bold: true, color: r.unusedLicenses >= 20 ? P.red : P.green, align: 'r' });
+      card(s2, 0.65, 3.3, 3.6, 1.25);
+      s2.text({ x: 0.9, y: 3.45, w: 3.1, h: 1.0, content: `${rm.overdue.length} milestone${rm.overdue.length === 1 ? '' : 's'} currently late — we are working on ${rm.overdue.length === 1 ? 'it' : 'them'}.`, size: 12, color: P.text2 });
+      card(s2, 0.65, 4.8, 12.03, 2.0);
+      s2.text({ x: 0.95, y: 4.98, w: 11, h: 0.3, content: 'Coming up next', size: 14, bold: true, color: P.blue });
+      rm.openSorted.filter(m => m.visualState !== 'overdue').slice(0, 3).forEach((m, i) => {
+        const x = 0.95 + i * 3.9;
+        s2.text({ x, y: 5.4, w: 3.6, h: 0.3, content: `${m.lane} · ${R ? m.statusMeta.text : ''}`, size: 10.5, color: P.muted });
+        s2.text({ x, y: 5.7, w: 3.6, h: 0.9, content: m.title, size: 13, bold: true });
       });
     }
 
-    // --- SLIDE 5: Employee Culture & Most Wanted Tools ---
-    const s5 = createSlideBuilder(P);
-    s5.header(t('nav_culture'), `${metrics.tf.label} · ${culture.totalResponses} / ${culture.totalEmp} ${t('responses')} (${culture.responsePct}%)`, 5);
+    // ---- 3 · Adoption
+    const s3 = createSlideBuilder(P);
+    frame(s3, 'Are we using AI?', 'Each department has its own target: its AI target group (roles where AI is relevant, McKinsey study 2026)', 3);
+    card(s3, 0.65, 1.55, 7.4, 5.2);
+    s3.text({ x: 0.95, y: 1.75, w: 6.8, h: 0.3, content: 'Weekly AI use by department · marker = own target', size: 13, bold: true });
+    metrics.rows.slice().sort((a, b) => b.weeklyPct - a.weeklyPct).forEach((r, i) => {
+      const y = 2.3 + i * 0.68;
+      const tg = S.weeklyTarget([r.dept]);
+      s3.text({ x: 0.95, y, w: 1.7, h: 0.3, content: r.dept.name, size: 12, color: P.text2 });
+      s3.progressBar({ x: 2.7, y: y + 0.07, w: 4.0, h: 0.2, pct: r.weeklyPct, targetPct: tg, fillColor: col(lvl(r.weeklyPct, tg)) });
+      s3.text({ x: 6.8, y, w: 1.1, h: 0.3, content: `${r.weeklyPct}%`, size: 12, bold: true, align: 'r' });
+      s3.text({ x: 2.7, y: y + 0.3, w: 4.0, h: 0.25, content: `target ${tg}%`, size: 9, color: P.muted });
+    });
+    kpi(s3, 8.3, 1.55, 4.38, 'AI target group trained', `${metrics.trainedTargetPct}%`, 'goal: everyone in the target group', P.blue);
+    kpi(s3, 8.3, 3.3, 4.38, 'Use AI on 3+ days a week', ladder ? `${pct(ladder.power, ladder.weekly)}%` : '—', 'of weekly AI users', P.blue);
+    kpi(s3, 8.3, 5.05, 4.38, 'Change vs last month', `${metrics.weeklyPct - metrics.weeklyPrevPct >= 0 ? '+' : ''}${metrics.weeklyPct - metrics.weeklyPrevPct} pp`, 'weekly AI use, all employees', P.blue);
 
-    // Left: 5 Survey Questions
-    s5.rect({ x: 0.65, y: 1.4, w: 6.4, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s5.text({ x: 0.95, y: 1.65, w: 5.8, h: 0.35, content: t('culture_pulse'), size: 15, bold: true });
+    // ---- 4 · People
+    const s4 = createSlideBuilder(P);
+    frame(s4, 'How do we feel about AI?', `Monthly pulse · ${culture.responsePct}% of employees responded`, 4);
+    card(s4, 0.65, 1.55, 6.0, 5.2);
+    s4.text({ x: 0.95, y: 1.75, w: 5.5, h: 0.3, content: 'Agreement with the survey statements · target 75%', size: 13, bold: true });
     culture.questions.forEach((q, i) => {
-      const ry = 2.25 + i * 0.88;
-      const col = statusHex(S.getStatus(q.pct, 75).level, P);
-      s5.text({ x: 0.95, y: ry, w: 4.8, h: 0.3, content: q.label, size: 12.5, color: P.text2 });
-      s5.text({ x: 5.85, y: ry, w: 0.9, h: 0.3, content: `${q.pct}%`, size: 13, bold: true, color: col, align: 'r' });
-      s5.progressBar({ x: 0.95, y: ry + 0.36, w: 5.8, h: 0.16, pct: q.pct, targetPct: 75, fillColor: col });
+      const y = 2.35 + i * 1.0;
+      s4.text({ x: 0.95, y, w: 4.6, h: 0.3, content: q.label, size: 12, color: P.text2 });
+      s4.text({ x: 5.4, y, w: 1.0, h: 0.3, content: `${q.pct}%`, size: 12, bold: true, align: 'r' });
+      s4.progressBar({ x: 0.95, y: y + 0.38, w: 5.45, h: 0.2, pct: q.pct, targetPct: 75, fillColor: col(lvl(q.pct, 75)) });
     });
+    card(s4, 6.9, 1.55, 5.78, 5.2);
+    s4.text({ x: 7.2, y: 1.75, w: 5.2, h: 0.3, content: 'What stops us — and what we do about it', size: 13, bold: true });
+    const B = D.CULTURE_SURVEY.barriers;
+    const w = D.DEPARTMENTS.reduce((a, d) => a + d.employees, 0);
+    B.options.map(o => ({ ...o, p: Math.round(D.DEPARTMENTS.reduce((a, d) => a + B.byDept[d.id][o.id] * d.employees, 0) / w) }))
+      .sort((a, b) => b.p - a.p).slice(0, 4).forEach((o, i) => {
+        const y = 2.3 + i * 1.08;
+        s4.text({ x: 7.2, y, w: 4.2, h: 0.3, content: o.label, size: 12, bold: true });
+        s4.text({ x: 11.4, y, w: 1.0, h: 0.3, content: `${o.p}%`, size: 12, bold: true, color: P.blue, align: 'r' });
+        s4.text({ x: 7.2, y: y + 0.35, w: 5.2, h: 0.5, content: `→ ${o.lever}`, size: 11, color: P.text2 });
+      });
 
-    // Right: Most Wanted Tools Ranking
-    s5.rect({ x: 7.35, y: 1.4, w: 5.33, h: 5.5, fill: P.surface, border: P.border, radius: 0.06 });
-    s5.text({ x: 7.65, y: 1.65, w: 4.7, h: 0.35, content: t('culture_wishes'), size: 15, bold: true });
-    const maxV = Math.max(1, culture.wishRanking[0]?.votes || 1);
-    culture.wishRanking.forEach((w, i) => {
-      const ry = 2.25 + i * 0.88;
-      s5.text({ x: 7.65, y: ry, w: 3.5, h: 0.3, content: `#${i + 1}  ${w.name}`, size: 13, bold: true });
-      s5.text({ x: 11.2, y: ry, w: 1.15, h: 0.3, content: `${w.votes} ${t('votes')}`, size: 12, color: P.muted, align: 'r' });
-      s5.progressBar({ x: 7.65, y: ry + 0.36, w: 4.7, h: 0.14, pct: Math.round((w.votes / maxV) * 100), fillColor: P.blue });
-    });
+    // ---- 5 · Impact (percentages and ratios only)
+    const s5 = createSlideBuilder(P);
+    frame(s5, 'What does AI change?', 'Change of business KPIs since each AI go-live · vs. the 3 months before', 5);
+    const ratio = metrics.costSavedMo / Math.max(1, metrics.totalSpendMo);
+    kpi(s5, 0.65, 1.55, 3.9, 'Return on every €1 spent', `€${ratio.toFixed(2)}`, 'break-even = €1.00', P.blue);
+    kpi(s5, 0.65, 3.3, 3.9, 'KPIs improved', im ? `${pct(im.improved, im.live.length)}%` : '—', 'of tracked business KPIs', P.blue);
+    kpi(s5, 0.65, 5.05, 3.9, 'Time saved per AI user', `${(metrics.hoursSavedMo / Math.max(1, metrics.weeklyUsers * 4.33)).toFixed(1)} h`, 'per week, after checking & rework', P.blue);
+    card(s5, 4.8, 1.55, 7.88, 5.2);
+    s5.text({ x: 5.1, y: 1.75, w: 7.2, h: 0.3, content: 'Business KPIs since AI go-live', size: 13, bold: true });
+    if (im) {
+      im.kpis.forEach((k, i) => {
+        const st = IM.stats(k);
+        const y = 2.25 + i * 0.55;
+        s5.text({ x: 5.1, y, w: 4.6, h: 0.3, content: k.name, size: 12, color: P.text2 });
+        s5.text({ x: 9.6, y, w: 1.4, h: 0.3, content: st.live ? st.delta : '—', size: 13, bold: true, color: st.better > 2 ? P.green : P.red, align: 'r' });
+        s5.text({ x: 11.1, y, w: 1.4, h: 0.3, content: k.lowerIsBetter ? 'lower = better' : 'higher = better', size: 9.5, color: P.muted, align: 'r' });
+      });
+    }
 
-    // --- SLIDE 6: 2026 Progress (Jan–Nov) & Recommended Next Steps ---
+    // ---- 6 · What's next & how to take part
     const s6 = createSlideBuilder(P);
-    s6.header(t('progress_2026'), scopeText, 6);
-
-    const trend = S.computeTrendSeries('weekly');
-    s6.rect({ x: 0.65, y: 1.4, w: 12.03, h: 3.15, fill: P.surface, border: P.border, radius: 0.06 });
-    s6.text({ x: 0.95, y: 1.6, w: 8, h: 0.3, content: `${t('metric_weekly')} · ${trend.scopeLabel} (${t('target')} ${trend.target}%)`, size: 14, bold: true });
-
-    // Clean 11-Month Column Chart
-    const chartBaseY = 4.05;
-    const maxBarH = 1.8;
-    const colStartX = 1.05;
-    const colGap = 1.03;
-    // Target Line across columns
-    const targetY = chartBaseY - (trend.target / 100) * maxBarH;
-    s6.rect({ x: 0.95, y: targetY, w: 11.4, h: 0.02, fill: P.green, radius: 0 });
-    trend.actual.forEach((val, i) => {
-      const bx = colStartX + i * colGap;
-      const bh = Math.max(0.12, (val / 100) * maxBarH);
-      const by = chartBaseY - bh;
-      const isCurrent = D.TREND_2026.keys[i] === S.state.filters.timeframe;
-      s6.rect({ x: bx, y: by, w: 0.62, h: bh, fill: isCurrent ? P.green : P.blue, radius: 0.12 });
-      s6.text({ x: bx - 0.05, y: by - 0.25, w: 0.72, h: 0.22, content: `${val}%`, size: 10.5, bold: true, align: 'ctr' });
-      s6.text({ x: bx - 0.08, y: chartBaseY + 0.08, w: 0.78, h: 0.24, content: trend.labels[i], size: 9.5, color: P.muted, align: 'ctr' });
+    frame(s6, 'What happens next — and how you can take part', 'Based on this month\'s results', 6);
+    const lowest = metrics.rows.slice().sort((a, b) => (a.weeklyPct - S.weeklyTarget([a.dept])) - (b.weeklyPct - S.weeklyTarget([b.dept])))[0];
+    const next = [
+      ['Learning time', 'Protected learning time of 30 minutes per week — the most named barrier is "no time to learn it".'],
+      ['Clear rules', 'A one-page AI usage policy & FAQ so everyone knows what is allowed.'],
+      ['Support where it is needed', lowest ? `Extra hands-on support in ${lowest.dept.name}, where use is furthest from its target.` : 'Extra hands-on support where use is furthest from target.']
+    ];
+    next.forEach((n, i) => {
+      const x = 0.65 + i * 4.05;
+      card(s6, x, 1.6, 3.83, 2.6);
+      s6.text({ x: x + 0.25, y: 1.8, w: 3.3, h: 0.3, content: `0${i + 1}`, size: 14, bold: true, color: P.blue });
+      s6.text({ x: x + 0.25, y: 2.15, w: 3.3, h: 0.35, content: n[0], size: 16, bold: true });
+      s6.text({ x: x + 0.25, y: 2.6, w: 3.35, h: 1.4, content: n[1], size: 12, color: P.text2 });
     });
+    s6.rect({ x: 0.65, y: 4.5, w: 12.03, h: 2.2, fill: P.light, radius: 0.06 });
+    s6.text({ x: 0.95, y: 4.7, w: 11.4, h: 0.35, content: 'How you can take part', size: 16, bold: true, color: P.navy });
+    s6.text({ x: 0.95, y: 5.15, w: 11.4, h: 1.4, content: '• Answer the monthly pulse — it directly shapes our priorities.\n• Ask your team\'s AI champion for help or ideas.\n• Suggest a use case for your area — the best ones become pilots.', size: 13, color: P.text });
 
-    // Bottom: Recommended Next Steps
-    s6.rect({ x: 0.65, y: 4.8, w: 12.03, h: 2.1, fill: P.surface, border: P.border, radius: 0.06 });
-    s6.text({ x: 0.95, y: 5.0, w: 9, h: 0.32, content: de ? 'Empfohlene nächste Schritte' : 'Recommended Next Steps', size: 15, bold: true, color: P.blue });
-    ai.actions.forEach((act, i) => {
-      const ax = 0.95 + i * 3.88;
-      s6.rect({ x: ax, y: 5.45, w: 3.65, h: 1.2, fill: P.soft, border: P.border, radius: 0.08 });
-      s6.text({ x: ax + 0.18, y: 5.58, w: 3.3, h: 0.25, content: `0${i + 1}`, size: 12, bold: true, color: P.blue });
-      s6.text({ x: ax + 0.18, y: 5.88, w: 3.3, h: 0.68, content: act, size: 11.5, color: P.text });
-    });
+    S.state.filters.dept = saved.dept;
+    if (window.NUTEX_ROADMAP) window.NUTEX_ROADMAP.sync();
 
     const slides = [s1.toXml(), s2.toXml(), s3.toXml(), s4.toXml(), s5.toXml(), s6.toXml()];
 
@@ -606,14 +504,14 @@ window.NUTEX_EXPORT = (() => {
       <a:dk2><a:srgbClr val="1E293B"/></a:dk2><a:lt2><a:srgbClr val="F3F5F9"/></a:lt2>
       <a:accent1><a:srgbClr val="2563EB"/></a:accent1><a:accent2><a:srgbClr val="10B981"/></a:accent2>
       <a:accent3><a:srgbClr val="F59E0B"/></a:accent3><a:accent4><a:srgbClr val="EF4444"/></a:accent4>
-      <a:accent5><a:srgbClr val="8B5CF6"/></a:accent5><a:accent6><a:srgbClr val="64748B"/></a:accent6>
+      <a:accent5><a:srgbClr val="6366F1"/></a:accent5><a:accent6><a:srgbClr val="64748B"/></a:accent6>
       <a:hlink><a:srgbClr val="2563EB"/></a:hlink><a:folHlink><a:srgbClr val="7C3AED"/></a:folHlink>
     </a:clrScheme>
     <a:fontScheme name="Clean">
       <a:majorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont>
       <a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont>
     </a:fontScheme>
-    <a:fmtScheme name="Clean"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme>
+    <a:fmtScheme name="Clean"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme>
   </a:themeElements>
 </a:theme>`
       }
@@ -642,7 +540,7 @@ window.NUTEX_EXPORT = (() => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `AI_Executive_Report_${metrics.tf.label.replace(/\s+/g, '_')}.pptx`;
+    a.download = `NuTex_AI_Update_${metrics.tf.label.replace(/\s+/g, '_')}.pptx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

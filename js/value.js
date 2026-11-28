@@ -1,7 +1,7 @@
 /* ============================================================================
    NuTex Inc. — Level 2: "Which pilots should we implement?"
-   Opened from the "Value per € spent" tile. Left: company value per € and
-   trend. Right: bubble chart of pilots (x = value per €, y = employees
+   Opened from the "Return per € spent" tile. Left: company return per € and
+   trend. Right: bubble chart of pilots (x = return per €, y = employees
    affected, size = monthly cost) with four decision zones and hover cards.
    ============================================================================ */
 
@@ -17,10 +17,10 @@ window.NUTEX_VALUE = (() => {
     return { max: Math.ceil(dept.employees / 10) * 10, split: Math.max(5, Math.round(dept.employees * 0.4)) };
   }
   const ZONES = {
-    implement: { label: 'Implement',  color: '#10B981', bg: 'rgba(16,185,129,0.09)', txt: 'var(--green-txt)', hint: 'pays off for many people' },
-    niche:     { label: 'Niche win',  color: '#3B82F6', bg: 'rgba(59,130,246,0.07)', txt: 'var(--blue)',      hint: 'pays off, few people' },
-    improve:   { label: 'Improve',    color: '#F59E0B', bg: 'rgba(245,158,11,0.09)', txt: 'var(--yellow-txt)', hint: 'many people, not paying off yet' },
-    stop:      { label: 'Stop',       color: '#EF4444', bg: 'rgba(239,68,68,0.08)',  txt: 'var(--red-txt)',   hint: 'costs more than it returns' }
+    implement: { label: 'Implement',  color: 'var(--green)', bg: 'rgba(16,185,129,0.09)', txt: 'var(--green-txt)', hint: 'pays off for many people' },
+    niche:     { label: 'Niche win',  color: 'var(--c-neutral-600)', bg: 'rgba(100,116,139,0.07)', txt: 'var(--text-2)',    hint: 'pays off, few people' },
+    improve:   { label: 'Improve',    color: 'var(--yellow)', bg: 'rgba(245,158,11,0.09)', txt: 'var(--yellow-txt)', hint: 'many people, not paying off yet' },
+    stop:      { label: 'Stop',       color: 'var(--red)', bg: 'rgba(239,68,68,0.08)',  txt: 'var(--red-txt)',   hint: 'costs more than it returns' }
   };
 
   const eur = (n) => '€' + Math.round(n).toLocaleString('en-US');
@@ -40,7 +40,7 @@ window.NUTEX_VALUE = (() => {
       .map(p => ({ ...p, vpe: p.valueMo / p.costMo, zone: zoneOf(p) }));
   };
 
-  function spark(values, { w = 260, h = 70, ref = 1, color = '#10B981' } = {}) {
+  function spark(values, { w = 260, h = 70, ref = 1, color = 'var(--c-primary)' } = {}) {
     const all = values.concat([ref]);
     const lo = Math.min(...all);
     const hi = Math.max(...all);
@@ -51,7 +51,7 @@ window.NUTEX_VALUE = (() => {
     const last = values.length - 1;
     return `
       <svg class="vl-spark" viewBox="0 0 ${w} ${h + 16}" aria-hidden="true">
-        <line x1="0" x2="${w}" y1="${y(ref)}" y2="${y(ref)}" stroke="#EF4444" stroke-dasharray="4 3" stroke-width="1" opacity="0.7"/>
+        <line x1="0" x2="${w}" y1="${y(ref)}" y2="${y(ref)}" stroke="var(--red)" stroke-dasharray="4 3" stroke-width="1" opacity="0.7"/>
         <text x="${w - 2}" y="${y(ref) + 13}" text-anchor="end" font-size="10" font-weight="600" fill="var(--red-txt)">break-even 1.0</text>
         <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
         <circle cx="${x(last)}" cy="${y(values[last])}" r="4" fill="${color}"/>
@@ -116,7 +116,7 @@ window.NUTEX_VALUE = (() => {
       const z = ZONES[p.zone];
       const live = p.status === 'Live';
       return `
-        <g class="vl-bubble" data-q="${p.zone}" data-pilot="${p.id}" tabindex="0" role="button" aria-label="${p.name}: €${p.vpe.toFixed(2)} per €, ${p.employees} employees">
+        <g class="vl-bubble" data-q="${p.zone}" data-pilot="${p.id}" tabindex="0" role="button" aria-label="${p.name}: €${p.vpe.toFixed(2)} return per €, ${p.employees} employees">
           <circle cx="${cx}" cy="${cy}" r="${r}" fill="${z.color}" fill-opacity="${live ? 0.95 : 0.8}" stroke="${live ? 'var(--text)' : 'var(--surface)'}" stroke-width="${live ? 2 : 1.5}"/>
           ${label(p, cx, cy, r)}
         </g>
@@ -124,7 +124,7 @@ window.NUTEX_VALUE = (() => {
     }).join('');
 
     return `
-      <svg class="vl-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pilots by value per euro and employees affected">
+      <svg class="vl-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pilots by return per euro and employees affected">
         ${zone('improve', L, T, x1 - L - 3, ys - T - 3, L + 10, T + 18, 'start')}
         ${zone('implement', x1 + 3, T, R - x1 - 3, ys - T - 3, R - 10, T + 18, 'end')}
         ${zone('stop', L, ys + 3, x1 - L - 3, B - ys - 3, L + 10, B - 10, 'start')}
@@ -132,7 +132,7 @@ window.NUTEX_VALUE = (() => {
         <line x1="${x1}" x2="${x1}" y1="${T}" y2="${B}" stroke="var(--text-3)" stroke-dasharray="4 4" stroke-width="1.2"/>
         <line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="var(--border-hover)"/>
         ${ticksX}${ticksY}
-        <text x="${R}" y="${H - 4}" text-anchor="end" font-size="11" font-weight="700" fill="var(--text-2)">value per € →</text>
+        <text x="${R}" y="${H - 4}" text-anchor="end" font-size="11" font-weight="700" fill="var(--text-2)">return per € →</text>
         <text transform="translate(12 ${(T + B) / 2}) rotate(-90)" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-2)">employees affected</text>
         ${bubbles}
       </svg>
@@ -140,6 +140,103 @@ window.NUTEX_VALUE = (() => {
   }
 
   // Opened from the overview; company KPI comes from the overview metrics
+  // Return split into the four drivers for the current scope (department / month).
+  // Pilots contribute their own driver(s); everyday AI use is time saved.
+  function drivers(totalMo) {
+    const M = D.RETURN_MODEL;
+    const out = Object.fromEntries(M.drivers.map(d => [d.id, 0]));
+    const list = pilots();
+    const pilotSum = list.reduce((s, p) => s + p.valueMo, 0);
+    const k = pilotSum > totalMo ? totalMo / pilotSum : 1; // earlier months: scale pilots into the total
+    list.forEach(p => {
+      const split = p.split || { [p.driver || 'time']: p.valueMo };
+      Object.entries(split).forEach(([id, v]) => { out[id] += v * k; });
+    });
+    out.time += Math.max(0, totalMo - pilotSum * k);
+    const total = Object.values(out).reduce((a, b) => a + b, 0);
+    return { ...out, total, hours: out.time / M.hourlyRate };
+  }
+
+  const k1 = (n) => `€${(n / 1000).toFixed(1)}k`;
+
+  function driverBar(dv) {
+    const M = D.RETURN_MODEL;
+    return `
+      <div class="vl-src">
+        <div class="vl-src-bar">${M.drivers.map(d => `<div style="flex:${Math.max(0.001, dv[d.id])};background:${d.color}" title="${d.label}: ${k1(dv[d.id])}"></div>`).join('')}</div>
+        <div class="vl-src-legend">
+          ${M.drivers.map(d => `<span><i style="background:${d.color}"></i>${d.label} <strong>${k1(dv[d.id])}</strong></span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Methodology pop-up: the one place where "return" is defined
+  function renderMethod(totalMo, scopeLabel) {
+    const M = D.RETURN_MODEL;
+    const S = window.NUTEX_STATE;
+    const dv = drivers(totalMo);
+    const CONF = { measured: { t: 'Measured', c: 'green' }, estimate: { t: 'Estimated', c: 'yellow' } };
+    // soft facts (tracked, not priced)
+    const fb = D.IMPACT.kpis.find(k => k.id === 'feedback');
+    const fbNow = fb.series[Math.min(fb.series.length - 1, 3 + Math.max(0, D.TREND_2026.keys.indexOf(S.state.filters.timeframe)))];
+    const culture = S.computeCulture();
+    const rm = window.NUTEX_ROADMAP ? window.NUTEX_ROADMAP.summary() : null;
+    const comp = rm ? rm.lanes.find(l => l.id === 'rules') : null;
+    const lv = (v, t) => (v >= t ? 'green' : v >= t - 10 ? 'yellow' : 'red');
+    const soft = [
+      { label: 'Customer feedback', value: `${fbNow}% positive`, level: lv(fbNow, 80), note: 'target 80%' },
+      { label: 'Employee sentiment', value: `${culture.overallPct}% People score`, level: lv(culture.overallPct, 75), note: 'target 75%' },
+      { label: 'Compliance risk', value: comp ? (comp.overdue.length ? `${comp.overdue.length} item overdue` : 'on track') : '—', level: comp ? comp.level : 'green', note: 'works council, AI Act, DPIA' }
+    ];
+    return `
+      <section class="card card-lg ov-detail rm2" aria-label="How we calculate return">
+        <div class="panel-head ov-detail-head">
+          <h3>How we calculate return</h3>
+          <button type="button" class="link-btn rm2-back" data-action="open-value">← Back to pilots</button>
+        </div>
+        <div class="rm2-formula">
+          <span class="rm2-total"><small>Return ${scopeLabel}</small><strong>${k1(dv.total)}</strong><small>/month</small></span>
+          <span class="rm2-eq">=</span>
+          ${M.drivers.map((d, i) => `
+            ${i ? '<span class="rm2-eq">+</span>' : ''}
+            <span class="rm2-part" style="border-color:${d.color}"><small>${d.label}</small><strong>${k1(dv[d.id])}</strong></span>
+          `).join('')}
+        </div>
+        <div class="rm2-table">
+          <div class="rm2-tr rm2-th"><span>Driver</span><span>How it is calculated</span><span>Source · owner</span><span>Basis</span><span>€ / month</span></div>
+          ${M.drivers.map(d => `
+            <div class="rm2-tr">
+              <span class="rm2-name"><i style="background:${d.color}"></i>${d.label}</span>
+              <span><strong>${d.formula}</strong><small>${d.detail}${d.id === 'time' ? ` Today: ${Math.round(dv.hours).toLocaleString('en-US')} h valued here.` : ''}</small></span>
+              <span><small>${d.source}<br>${d.owner} · ${d.freq}</small></span>
+              <span><em class="ip-conf ip-conf-${CONF[d.confidence].c}">${CONF[d.confidence].t}</em></span>
+              <strong class="rm2-eur">${k1(dv[d.id])}</strong>
+            </div>
+          `).join('')}
+        </div>
+        <div class="rm2-bottom">
+          <div class="rm2-rules">
+            <span class="vl-lbl">Rules</span>
+            ${M.rules.map(r => `<span>• ${r}</span>`).join('')}
+          </div>
+          <div class="rm2-soft">
+            <span class="vl-lbl">Soft facts · tracked, not priced</span>
+            <div class="rm2-soft-grid">
+              ${soft.map(x => `
+                <div class="rm2-soft-card">
+                  <span><i class="dot dot-${x.level}"></i>${x.label}</span>
+                  <strong>${x.value}</strong>
+                  <small>${x.note}</small>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   function render({ ratio, valueMo, costMo, series, labels }) {
     const list = pilots();
     const prev = series.length > 1 ? series[series.length - 2] : ratio;
@@ -151,31 +248,24 @@ window.NUTEX_VALUE = (() => {
     return `
       <section class="card card-lg vl-card" aria-label="Which pilots should we implement?">
         <div class="panel-head">
-          <h3>Which pilots should we implement?</h3>
+          <h3>Return per € spent</h3>
         </div>
+        <div class="b2-q ov-detail-q">Which pilots should we implement?</div>
         <div class="vl-wrap" data-vl-stage>
           <div class="vl-left">
-            <span class="vl-lbl">Value per € spent</span>
+            <span class="vl-lbl">Return per € spent</span>
             <div class="vl-big">€${ratio.toFixed(2)}</div>
             <div class="vl-meta">target ≥ €1.00</div>
-            <div class="vl-meta"><strong>${eurK(valueMo)} value</strong> vs <strong>${eurK(costMo)} cost</strong> per month</div>
+            <div class="vl-meta"><strong>${eurK(valueMo)} return</strong> vs <strong>${eurK(costMo)} cost</strong> per month</div>
             <div class="vl-meta ${diff >= 0 ? 'text-green' : 'text-red'}"><strong>${diff >= 0 ? '+' : ''}${diff.toFixed(2)}</strong> vs last month</div>
-            ${spark(series, { color: ratio >= 1 ? '#10B981' : '#EF4444' })}
+            ${spark(series, { color: 'var(--c-primary)' })}
             <div class="vl-axis"><span>${labels[0]}</span><span>${labels[labels.length - 1]}</span></div>
 
-            <span class="vl-lbl" style="margin-top:12px">Where the value comes from</span>
-            <div class="vl-src">
-              <div class="vl-src-bar">
-                <div style="flex:${Math.min(pv, valueMo)};background:#10B981" title="Pilots"></div>
-                <div style="flex:${Math.max(0, valueMo - pv)};background:#93C5FD" title="Everyday AI tools"></div>
-              </div>
-              <div class="vl-src-legend">
-                <span><i style="background:#10B981"></i>Pilots <strong>${eurK(Math.min(pv, valueMo))}</strong></span>
-                <span><i style="background:#93C5FD"></i>Everyday AI tools <strong>${eurK(Math.max(0, valueMo - pv))}</strong></span>
-              </div>
-            </div>
+            <span class="vl-lbl" style="margin-top:12px">Where the return comes from</span>
+            ${driverBar(drivers(valueMo))}
+            <button type="button" class="link-btn vl-method-link" data-action="open-method">How is return calculated? →</button>
 
-            <span class="vl-lbl" style="margin-top:12px">${list.length} pilot${list.length === 1 ? '' : 's'} · ${eurK(pv)} value vs ${eurK(pc)} cost</span>
+            <span class="vl-lbl" style="margin-top:12px">${list.length} use case${list.length === 1 ? '' : 's'} · ${eurK(pv)} return vs ${eurK(pc)} cost</span>
             <div class="vl-chips">
               ${counts.map(c => `
                 <span class="vl-chip" data-q="${c.k}" title="${ZONES[c.k].hint}">
@@ -204,16 +294,23 @@ window.NUTEX_VALUE = (() => {
       </div>
       <div class="vl-tip-sub">${p.full} · ${deptName(p.deptId)} · ${p.owner}</div>
       <div class="vl-tip-grid">
-        <span>Value per €</span><strong style="color:${z.txt}">€${p.vpe.toFixed(2)}</strong>
-        <span>Value / month</span><strong>${eur(p.valueMo)}</strong>
+        <span>Return per €</span><strong style="color:${z.txt}">€${p.vpe.toFixed(2)}</strong>
+        <span>Return / month</span><strong>${eur(p.valueMo)}</strong>
         <span>Cost / month</span><strong>${eur(p.costMo)}</strong>
         <span>Employees</span><strong>${p.employees}</strong>
         <span>Status</span><strong>${p.status} since ${p.since}</strong>
       </div>
       <div class="vl-tip-trend">
-        <span>Value per € · Jun → Nov</span>
+        <span>Return per € · Jun → Nov</span>
         ${miniTrend(p.trend, z.color)}
       </div>
+      <div class="vl-tip-mix">${(() => {
+        const split = p.split || { [p.driver || 'time']: p.valueMo };
+        return Object.entries(split).map(([id, v]) => {
+          const d = D.RETURN_MODEL.drivers.find(x => x.id === id);
+          return `<span><i style="background:${d.color}"></i>${d.label} ${k1(v)}</span>`;
+        }).join('');
+      })()}</div>
       <div class="vl-tip-result">${p.result}</div>
       <div class="vl-tip-next"><span>Next step</span>${p.next}</div>
     `;
@@ -262,5 +359,5 @@ window.NUTEX_VALUE = (() => {
     root.addEventListener('focusout', e => { const [n, s] = find(e); if (n) hide(s); });
   }
 
-  return { render, bind, pilots };
+  return { render, renderMethod, drivers, bind, pilots };
 })();
